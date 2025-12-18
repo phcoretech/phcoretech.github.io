@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FACTURACIÓN GALHER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* --- ESTILOS VISUALES --- */
+        :root {
+            --bg-body: #0b1120;
+            --bg-column: rgba(30, 41, 59, 0.4); 
+            --bg-glass-header: rgba(15, 23, 42, 0.85);
+            --primary: #0066ff; 
+            --primary-hover: #0052cc;
+            --danger: #ef4444;
+            --whatsapp: #25D366;
+            --bg-card: #ffffff;
+            --text-primary: #f1f5f9; 
+            --text-card-title: #0f172a;
+            --text-card-desc: #475569;
+            --radius-xl: 20px;
+            --radius-lg: 14px; 
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body); 
+            color: var(--text-primary); 
+            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            background-image: radial-gradient(circle at 0% 0%, rgba(0, 102, 255, 0.15), transparent 40%), radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.1), transparent 40%);
+        }
+
+        /* HEADER */
+        header { 
+            background: var(--bg-glass-header);
+            backdrop-filter: blur(16px); padding: 1rem 2.5rem; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 20;
+        }
+        h1 { font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 16px; color: white; letter-spacing: 0.02em; }
+
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary), #004ecc);
+            color: white; border: none; padding: 0.75rem 1.75rem; border-radius: 50px;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 102, 255, 0.5); }
+
+        /* KANBAN BOARD */
+        .board-container { display: flex; padding: 2.5rem; gap: 32px; height: 100%; overflow-x: auto; align-items: flex-start; }
+        
+        .column { 
+            background-color: var(--bg-column); backdrop-filter: blur(10px);
+            min-width: 380px; width: 380px; border-radius: var(--radius-xl); 
+            display: flex; flex-direction: column; max-height: calc(100vh - 160px); 
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .column-header { padding: 24px 28px; font-weight: 600; color: #e2e8f0; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .badge { background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .task-list { padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; min-height: 100px;}
+        .task-list.drag-over { background: rgba(0, 102, 255, 0.05); }
+
+        /* TARJETAS */
+        .task-card { 
+            background-color: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-card); cursor: pointer; border-left: 4px solid #cbd5e1;
+            transition: all 0.25s; position: relative;
+        }
+        .task-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .task-card.dragging { opacity: 0.5; }
+
+        .border-nueva { border-left-color: #38bdf8; } 
+        .border-proceso { border-left-color: #f59e0b; } 
+        .border-emitida { border-left-color: #10b981; } 
+
+        .task-title { font-weight: 700; font-size: 1.1rem; color: var(--text-card-title); margin-bottom: 4px; pointer-events: none; }
+        .task-monto { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 12px; pointer-events: none; }
+        .task-desc { font-size: 0.9rem; color: var(--text-card-desc); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; pointer-events: none; }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center; }
+        .modal-box { background: #1e293b; width: 100%; max-width: 700px; border-radius: 24px; padding: 40px; color: white; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; }
+        .form-input, select.form-input { 
+            width: 100%; padding: 14px; background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #f8fafc;
+            font-family: 'Inter', sans-serif; outline: none;
+        }
+        .form-input:read-only { background: rgba(255,255,255,0.05); color: #94a3b8; cursor: not-allowed; }
+        .form-input:focus { border-color: var(--primary); }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+        /* FOOTER MODAL */
+        .modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+        .footer-right { display: flex; gap: 15px; }
+
+        .btn-text { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 12px 20px; font-weight: 600; }
+        .btn-text:hover { color: white; }
+
+        .btn-delete { 
+            background: rgba(239, 68, 68, 0.15); color: var(--danger); 
+            border: 1px solid var(--danger); padding: 10px 20px; border-radius: 8px;
+            cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px;
+            transition: 0.3s;
+        }
+        .btn-delete:hover { background: var(--danger); color: white; }
+
+        /* BOTONES DE ACCIÓN EN TARJETA */
+        .card-actions { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        .btn-gmail {
+            padding: 10px; border-radius: 8px; border: 1px solid #EA4335; 
+            background: rgba(234, 67, 53, 0.1); color: #EA4335; 
+            cursor: pointer; text-decoration: none; text-align: center;
+            font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .btn-gmail:hover { background: #EA4335; color: white; }
+
+        .btn-whatsapp {
+            padding: 10px; border-radius: 8px; border: 1px solid var(--whatsapp); 
+            background: rgba(37, 211, 102, 0.1); color: var(--whatsapp); 
+            cursor: pointer; text-decoration: none; text-align: center;
+            font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .btn-whatsapp:hover { background: var(--whatsapp); color: white; }
+
+        .btn-copy {
+            padding: 10px; border-radius: 8px; border: 1px solid var(--primary); 
+            background: rgba(0, 102, 255, 0.1); color: var(--primary); 
+            cursor: pointer; text-decoration: none; text-align: center;
+            font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .btn-copy:hover { background: var(--primary); color: white; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>
+            <i class="ph-bold ph-receipt" style="color:#38bdf8; font-size:32px;"></i>
+            FACTURACIÓN GALHER
+        </h1>
+        <button class="btn-primary" onclick="openModal()">
+            <i class="ph-bold ph-plus"></i> Registrar Gasto
+        </button>
+    </header>
+
+    <div class="board-container">
+        <div class="column" id="Nueva Factura">
+            <div class="column-header">
+                <span style="color:#38bdf8">NUEVA FACTURA</span>
+                <span class="badge" id="count-nueva">0</span>
+            </div>
+            <div class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+
+        <div class="column" id="En Proceso">
+            <div class="column-header">
+                <span style="color:#f59e0b">EN PROCESO</span>
+                <span class="badge" id="count-proceso">0</span>
+            </div>
+            <div class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+
+        <div class="column" id="Emitida">
+            <div class="column-header">
+                <span style="color:#10b981">EMITIDA</span>
+                <span class="badge" id="count-emitida">0</span>
+            </div>
+            <div class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal-box">
+            <h2 id="modalTitle" style="margin-top:0;">Registrar Factura</h2>
+            <form id="formFactura" onsubmit="saveFactura(event)">
+                <input type="hidden" id="facturaId"> 
+
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">Nombre del Gasto</label>
+                        <input type="text" id="nombre_gasto" class="form-input" placeholder="Ej. Comida con Cliente" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Monto ($)</label>
+                        <input type="number" id="monto" class="form-input" placeholder="0.00" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">Fecha de Compra</label>
+                        <input type="date" id="fecha_compra" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Lugar de Compra</label>
+                        <input type="text" id="lugar" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div style="grid-column: span 2;">
+                        <label class="form-label">Tipo de Facturación</label>
+                        <select id="tipo_facturacion" class="form-input" onchange="toggleContactFields()" required>
+                            <option value="Negocio">En Negocio</option>
+                            <option value="WhatsApp">Por WhatsApp</option>
+                            <option value="Email">Por Correo Electrónico</option>
+                            <option value="Web">Página Web</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="divCorreoProveedor" style="display:none; border:1px solid var(--primary); padding:10px; border-radius:10px;">
+                    <label class="form-label" style="color:var(--primary)">Correo del Negocio</label>
+                    <input type="email" id="correo_proveedor" class="form-input" placeholder="facturacion@negocio.com">
+                </div>
+
+                <div class="form-group" id="divWhatsappProveedor" style="display:none; border:1px solid var(--whatsapp); padding:10px; border-radius:10px;">
+                    <label class="form-label" style="color:var(--whatsapp)">WhatsApp del Negocio (10 Dígitos)</label>
+                    <input type="number" id="whatsapp_proveedor" class="form-input" placeholder="Ej. 6561234567">
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">RFC (Mis Datos)</label>
+                        <input type="text" id="rfc" class="form-input" value="GCO0802276B1" readonly>
+                    </div>
+                    <div>
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" id="telefono" class="form-input" value="6563834893" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div style="width:100%">
+                        <label class="form-label">Foto del Ticket</label>
+                        <input type="file" id="foto_ticket" class="form-input" accept="image/*, application/pdf">
+                        <div id="container-ticket-actual" style="margin-top:5px; display:none;">
+                            <span style="color:#94a3b8; font-size:0.8rem;">Actual: </span>
+                            <a id="link-ticket-actual" href="#" target="_blank" class="file-status-link">Ver Ticket Guardado</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div>
+                        <button type="button" id="btnDelete" class="btn-delete" onclick="deleteFactura()" style="display:none;">
+                            <i class="ph-bold ph-trash"></i> Eliminar
+                        </button>
+                    </div>
+                    <div class="footer-right">
+                        <button type="button" class="btn-text" onclick="closeModal()">Cancelar</button>
+                        <button type="submit" class="btn-primary" id="btnSave">Guardar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- CREDENCIALES ---
+        const SUPABASE_URL = 'https://pavpbtfucesbjapaycsk.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdnBidGZ1Y2VzYmphcGF5Y3NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODg1MjksImV4cCI6MjA3OTg2NDUyOX0.Z16gzv5y9CDPzhQZKKTVr8UL49bW8y88LZ8Pbq_9ZhQ';
+        
+        const CONSTANCIA_DEFAULT_URL = "https://pavpbtfucesbjapaycsk.supabase.co/storage/v1/object/public/archivos_facturacion/CSF.pdf";
+        const CORREO_INTERNO = "franciscopuga.galher@gmail.com";
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentTicketUrl = "";
+
+        window.addEventListener('DOMContentLoaded', fetchFacturas);
+
+        function toggleContactFields() {
+            const tipo = document.getElementById('tipo_facturacion').value;
+            const divEmail = document.getElementById('divCorreoProveedor');
+            const divWa = document.getElementById('divWhatsappProveedor');
+
+            divEmail.style.display = 'none';
+            divWa.style.display = 'none';
+
+            if (tipo === 'Email') divEmail.style.display = 'block';
+            if (tipo === 'WhatsApp') divWa.style.display = 'block';
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+        function closeModalOnOverlay(ev) { if (ev.target.id === 'modalOverlay') closeModal(); }
+        
+        function openModal(factura = null) {
+            document.getElementById('modalOverlay').style.display = 'flex';
+            const form = document.getElementById('formFactura');
+            const title = document.getElementById('modalTitle');
+            const btn = document.getElementById('btnSave');
+            const btnDelete = document.getElementById('btnDelete');
+            
+            const divTicket = document.getElementById('container-ticket-actual');
+            const linkTicket = document.getElementById('link-ticket-actual');
+
+            if (factura) {
+                // MODO EDICIÓN
+                title.innerText = "Editar Gasto";
+                btn.innerText = "Actualizar";
+                
+                if (factura.status === 'Emitida') {
+                    btnDelete.style.display = "flex";
+                } else {
+                    btnDelete.style.display = "none";
+                }
+                
+                document.getElementById('facturaId').value = factura.id;
+                document.getElementById('nombre_gasto').value = factura.nombre_gasto;
+                document.getElementById('monto').value = factura.monto;
+                document.getElementById('lugar').value = factura.lugar;
+                document.getElementById('fecha_compra').value = factura.fecha_compra || "";
+                document.getElementById('tipo_facturacion').value = factura.tipo_facturacion;
+                document.getElementById('correo_proveedor').value = factura.correo_proveedor || "";
+                document.getElementById('whatsapp_proveedor').value = factura.whatsapp_proveedor || "";
+                
+                currentTicketUrl = factura.ticket_url;
+
+                divTicket.style.display = "block";
+                linkTicket.href = currentTicketUrl;
+                
+            } else {
+                // MODO CREAR
+                title.innerText = "Registrar Factura";
+                btn.innerText = "Guardar";
+                btnDelete.style.display = "none";
+                form.reset();
+                document.getElementById('facturaId').value = "";
+                document.getElementById('fecha_compra').valueAsDate = new Date();
+                currentTicketUrl = "";
+                divTicket.style.display = "none";
+            }
+            toggleContactFields(); 
+        }
+
+        async function fetchFacturas() {
+            document.querySelectorAll('.task-list').forEach(el => el.innerHTML = '');
+            const counts = { 'Nueva Factura': 0, 'En Proceso': 0, 'Emitida': 0 };
+
+            const { data, error } = await supabase.from('facturas').select('*').order('created_at', { ascending: false });
+            if (error) return console.error("Error cargando:", error);
+
+            data.forEach(factura => {
+                createCard(factura);
+                if (counts[factura.status] !== undefined) counts[factura.status]++;
+            });
+
+            document.getElementById('count-nueva').innerText = counts['Nueva Factura'];
+            document.getElementById('count-proceso').innerText = counts['En Proceso'];
+            document.getElementById('count-emitida').innerText = counts['Emitida'];
+        }
+
+        async function deleteFactura() {
+            const id = document.getElementById('facturaId').value;
+            if(!id) return;
+            
+            if(confirm("⚠️ ¿Eliminar permanentemente este gasto?")) {
+                const btnDelete = document.getElementById('btnDelete');
+                btnDelete.innerText = "Borrando...";
+                
+                const { error } = await supabase.from('facturas').delete().eq('id', id);
+                if(error) {
+                    alert("Error: " + error.message);
+                } else {
+                    closeModal();
+                    fetchFacturas();
+                }
+            }
+        }
+
+        function createCard(factura) {
+            const div = document.createElement('div');
+            div.className = 'task-card';
+            div.draggable = true;
+            div.id = factura.id;
+            
+            if(factura.status === 'Nueva Factura') div.classList.add('border-nueva');
+            if(factura.status === 'En Proceso') div.classList.add('border-proceso');
+            if(factura.status === 'Emitida') div.classList.add('border-emitida');
+
+            div.ondragstart = drag;
+            div.onclick = (e) => {
+                if(e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'I') {
+                    openModal(factura);
+                }
+            };
+            
+            let actionButtons = '';
+
+            // Solo mostrar acciones si no está terminada
+            if (factura.status !== 'Emitida') {
+                
+                // 1. CASO WHATSAPP (Muestra DOS botones: WA y Gmail)
+                if (factura.tipo_facturacion === 'WhatsApp' && factura.whatsapp_proveedor) {
+                     const mensajeWa = `Hola, buen día. Solicito factura del consumo: ${factura.nombre_gasto}\n\nRFC: ${factura.rfc}\nRazón: GALHER COMUNICACION\nRégimen: 626 - Simplificado de Confianza\nUso CFDI: G03\nCP: 98000\n\nTICKET: ${factura.ticket_url}\nCSF: ${CONSTANCIA_DEFAULT_URL}`;
+                     
+                     const waLink = `https://wa.me/52${factura.whatsapp_proveedor}?text=${encodeURIComponent(mensajeWa)}`;
+
+                     // Link para notificar a Francisco (Gmail)
+                     const asuntoInterno = encodeURIComponent(`Notificación Gasto WhatsApp - ${factura.nombre_gasto}`);
+                     const cuerpoInterno = encodeURIComponent(`Hola Francisco,\n\nSe ha solicitado una factura por WhatsApp al número ${factura.whatsapp_proveedor}.\n\nGasto: ${factura.nombre_gasto}\nMonto: $${factura.monto}\n\nTicket: ${factura.ticket_url}`);
+                     const gmailInternoLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${CORREO_INTERNO}&su=${asuntoInterno}&body=${cuerpoInterno}`;
+
+                     actionButtons = `
+                        <div class="card-actions">
+                            <a href="${waLink}" target="_blank" class="btn-whatsapp">
+                                <i class="ph-bold ph-whatsapp-logo"></i> Pedir por WhatsApp
+                            </a>
+                            <a href="${gmailInternoLink}" target="_blank" class="btn-gmail">
+                                <i class="ph-bold ph-envelope-simple"></i> Notificar a Francisco
+                            </a>
+                        </div>
+                     `;
+
+                } 
+                // 2. CASO EMAIL / OTROS
+                else {
+                    let emailDestino = "";
+                    let etiquetaBoton = "";
+
+                    if (factura.tipo_facturacion === 'Email' && factura.correo_proveedor) {
+                        emailDestino = factura.correo_proveedor;
+                        etiquetaBoton = "Enviar a Proveedor";
+                    } else {
+                        emailDestino = CORREO_INTERNO;
+                        etiquetaBoton = "Notificar a Francisco";
+                    }
+
+                    const asunto = encodeURIComponent(`Solicitud de Factura - ${factura.nombre_gasto}`);
+                    
+                    const mensajePlano = 
+`HOLA, BUEN DÍA.
+
+Adjunto información para facturación del consumo: ${factura.nombre_gasto}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 DATOS DE FACTURACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RFC: ${factura.rfc}
+Razón Social: GALHER COMUNICACION
+Régimen: 626 - Régimen Simplificado de Confianza
+Uso CFDI: G03 - Gastos en general
+CP: 98000
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📎 ARCHIVOS Y DETALLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 Fecha Compra: ${factura.fecha_compra || 'N/A'}
+📍 Lugar: ${factura.lugar}
+
+1. TICKET:
+${factura.ticket_url}
+
+2. CONSTANCIA FISCAL (CSF):
+${CONSTANCIA_DEFAULT_URL}
+
+Saludos.`;
+
+                    const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${emailDestino}&su=${asunto}&body=${encodeURIComponent(mensajePlano)}`;
+                    
+                    // HTML Copy (Diseño Bonito)
+                    const htmlCopy = `
+                        <div style="font-family: Arial, sans-serif; color: #1e293b; max-width: 600px;">
+                            <p style="font-size: 16px;">Hola, buen día.</p>
+                            <p>Adjunto datos para facturar: <strong>${factura.nombre_gasto}</strong></p>
+                            
+                            <div style="background-color: #f1f5f9; border-left: 4px solid #0066ff; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                <h3 style="margin: 0 0 10px 0; color: #0066ff;">📂 DATOS FISCALES</h3>
+                                <p style="margin: 4px 0;"><strong>RFC:</strong> ${factura.rfc}</p>
+                                <p style="margin: 4px 0;"><strong>Razón Social:</strong> GALHER COMUNICACION</p>
+                                <p style="margin: 4px 0;"><strong>Régimen:</strong> 626 - Simplificado de Confianza</p>
+                                <p style="margin: 4px 0;"><strong>Uso CFDI:</strong> G03 - Gastos en general</p>
+                                <p style="margin: 4px 0;"><strong>C.P.:</strong> 98000</p>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <p>📅 <strong>Fecha:</strong> ${factura.fecha_compra || 'N/A'}<br>
+                                   📍 <strong>Lugar:</strong> ${factura.lugar}</p>
+
+                                <p><strong>1. TICKET:</strong> <a href="${factura.ticket_url}">Ver Ticket</a></p>
+                                <p><strong>2. CONSTANCIA:</strong> <a href="${CONSTANCIA_DEFAULT_URL}">Ver CSF</a></p>
+                            </div>
+                        </div>
+                    `;
+
+                    actionButtons = `
+                        <div class="card-actions">
+                            <a href="${gmailLink}" target="_blank" class="btn-gmail">
+                                <i class="ph-bold ph-envelope-simple"></i> ${etiquetaBoton}
+                            </a>
+                            <button onclick="copiarAlPortapapeles(event, \`${htmlCopy.replace(/"/g, "'")}\`)" class="btn-copy">
+                                <i class="ph-bold ph-copy"></i> Copiar
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+
+            const fechaBonita = factura.fecha_compra ? new Date(factura.fecha_compra).toLocaleDateString() : '';
+
+            div.innerHTML = `
+                <div class="task-title">${factura.nombre_gasto}</div>
+                <div class="task-monto">$${factura.monto}</div>
+                <div class="task-desc"><i class="ph-bold ph-calendar-blank"></i> ${fechaBonita}</div>
+                <div class="task-desc"><i class="ph-bold ph-map-pin"></i> ${factura.lugar}</div>
+                <div class="task-desc"><i class="ph-bold ph-tag"></i> ${factura.tipo_facturacion}</div>
+                
+                <div style="margin-top:10px;">
+                    <a href="${factura.ticket_url}" target="_blank" style="font-size:0.8rem; color:#38bdf8; text-decoration:none;">Ver Ticket</a>
+                </div>
+                ${actionButtons}
+            `;
+            
+            const column = document.getElementById(factura.status);
+            if (column) column.querySelector('.task-list').appendChild(div);
+        }
+
+        async function copiarAlPortapapeles(e, htmlContent) {
+            e.stopPropagation(); 
+            try {
+                const blob = new Blob([htmlContent], { type: "text/html" });
+                const data = [new ClipboardItem({ "text/html": blob })];
+                await navigator.clipboard.write(data);
+                alert("✨ Diseño copiado. Pégalo en Gmail.");
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function saveFactura(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSave');
+            const originalText = btn.innerText;
+            btn.innerText = "Procesando...";
+            btn.disabled = true;
+
+            try {
+                const facturaId = document.getElementById('facturaId').value;
+                const isEdit = !!facturaId;
+
+                const fileTicket = document.getElementById('foto_ticket').files[0];
+                let finalTicketUrl = currentTicketUrl;
+
+                if (fileTicket) {
+                    const name = `ticket_${Date.now()}_${fileTicket.name.replace(/\s+/g, '')}`; 
+                    const { error: errT } = await supabase.storage.from('archivos_facturacion').upload(name, fileTicket);
+                    if(errT) throw errT;
+                    finalTicketUrl = supabase.storage.from('archivos_facturacion').getPublicUrl(name).data.publicUrl;
+                } else if (!isEdit) {
+                    throw new Error("La foto del ticket es obligatoria.");
+                }
+
+                const datosFactura = {
+                    nombre_gasto: document.getElementById('nombre_gasto').value,
+                    monto: document.getElementById('monto').value,
+                    lugar: document.getElementById('lugar').value,
+                    fecha_compra: document.getElementById('fecha_compra').value,
+                    tipo_facturacion: document.getElementById('tipo_facturacion').value,
+                    correo_proveedor: document.getElementById('correo_proveedor').value,
+                    whatsapp_proveedor: document.getElementById('whatsapp_proveedor').value,
+                    rfc: document.getElementById('rfc').value,
+                    telefono: document.getElementById('telefono').value,
+                    ticket_url: finalTicketUrl,
+                    constancia_url: CONSTANCIA_DEFAULT_URL
+                };
+
+                if (!isEdit) {
+                    datosFactura.status = 'Nueva Factura'; 
+                    const { error } = await supabase.from('facturas').insert([datosFactura]);
+                    if(error) throw error;
+                    alert("✅ Gasto creado.");
+                } else {
+                    const { error } = await supabase.from('facturas').update(datosFactura).eq('id', facturaId);
+                    if(error) throw error;
+                    alert("✅ Gasto actualizado.");
+                }
+
+                closeModal();
+                fetchFacturas();
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); ev.target.closest('.task-list')?.classList.add('drag-over'); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        async function drop(ev) {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("text");
+            let target = ev.target.closest('.column');
+            if(target) {
+                const newStatus = target.id; 
+                const card = document.getElementById(id);
+                target.querySelector('.task-list').appendChild(card);
+                
+                card.classList.remove('border-nueva', 'border-proceso', 'border-emitida');
+                if(newStatus === 'Nueva Factura') card.classList.add('border-nueva');
+                if(newStatus === 'En Proceso') card.classList.add('border-proceso');
+                if(newStatus === 'Emitida') card.classList.add('border-emitida');
+
+                await supabase.from('facturas').update({ status: newStatus }).eq('id', id);
+                fetchFacturas();
+            }
+            document.querySelectorAll('.task-list').forEach(el => el.classList.remove('drag-over'));
+        }
+    </script>
+</body>
+</html>

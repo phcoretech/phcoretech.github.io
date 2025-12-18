@@ -1,0 +1,743 @@
+<style>
+    /* --- DISEÑO V21: FINAL DASHBOARD (CLOCK UPDATED) --- */
+    
+    #home-wrapper {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #fafafa;
+        color: #262626;
+        min-height: 100%;
+        padding: 30px;
+        border-radius: 24px;
+        position: relative;
+    }
+
+    /* LOADER */
+    #child-loader-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: #fafafa; z-index: 100; border-radius: 24px;
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease-out, visibility 0.5s;
+    }
+    .spinner {
+        width: 40px;
+        height: 40px; border: 3px solid #dbdbdb;
+        border-top: 3px solid #262626; border-radius: 50%;
+        animation: spin 0.8s linear infinite; margin-bottom: 15px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg);
+    } }
+    #home-content { opacity: 0; transition: opacity 0.6s ease-out;
+    }
+    .visible { opacity: 1 !important; }
+
+    /* HERO */
+    .hero-card {
+        background: linear-gradient(45deg, #00376b, #0095f6);
+        border-radius: 12px; padding: 30px; margin-bottom: 30px;
+        display: flex; justify-content: space-between; align-items: center;
+        color: white;
+        box-shadow: 0 8px 20px rgba(0, 149, 246, 0.2);
+    }
+    .hero-text h1 { font-size: 1.8rem; font-weight: 700;
+        margin-bottom: 5px; }
+    .hero-text p { opacity: 0.9; font-size: 1rem;
+    }
+
+    /* TICKER */
+    .ticker-container { margin-bottom: 30px; border-radius: 8px; overflow: hidden;
+        border: 1px solid #dbdbdb; }
+
+    /* --- PANEL ADMIN REDISEÑADO --- */
+    #admin-zone {
+        display: none;
+        background: #ffffff; border: 1px solid #dbdbdb; border-radius: 16px;
+        overflow: hidden; margin-bottom: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .admin-header {
+        background: #fff; padding: 0 25px;
+        border-bottom: 1px solid #efefef;
+        display: flex; gap: 30px;
+    }
+    .tab-btn {
+        background: transparent;
+        border: none; padding: 20px 0; font-weight: 600; color: #8e8e8e;
+        cursor: pointer; position: relative; transition: 0.3s; font-size: 0.95rem; letter-spacing: 0.5px;
+    }
+    .tab-btn.active { color: #0095f6; }
+    .tab-btn.active::after {
+        content: '';
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; 
+        background: #0095f6; border-radius: 3px 3px 0 0;
+    }
+    .admin-body { padding: 30px; display: none; }
+    .admin-body.active { display: block;
+        animation: slideDown 0.3s ease-out; }
+    @keyframes slideDown { from{opacity:0; transform:translateY(-10px);} to{opacity:1;
+        transform:translateY(0);} }
+
+    /* INPUTS PULIDOS */
+    .form-grid { display: grid; grid-template-columns: 2fr 1fr;
+        gap: 30px; }
+    .input-wrapper { margin-bottom: 20px; position: relative;
+    }
+    .input-label { 
+        font-size: 0.75rem; font-weight: 700; color: #8e8e8e;
+        margin-bottom: 8px; 
+        display: block; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .input-modern {
+        width: 100%;
+        padding: 14px 16px; background: #fafafa; border: 1px solid #dbdbdb;
+        border-radius: 10px; color: #262626; font-size: 0.95rem; transition: all 0.2s;
+    }
+    .input-modern:focus { border-color: #0095f6; background: #fff; box-shadow: 0 0 0 3px rgba(0, 149, 246, 0.1);
+        outline: none; }
+    textarea.input-modern { resize: vertical; min-height: 100px;
+    }
+
+    /* SELECTOR DE COLORES (NUEVO) */
+    .color-picker-container {
+        display: flex; gap: 10px; padding: 5px 0;
+    }
+    .color-swatch {
+        width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+        border: 2px solid #e0e0e0; transition: transform 0.2s, border-color 0.2s;
+        position: relative;
+    }
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active { border-color: #262626; transform: scale(1.15); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    /* Checkmark para el activo */
+    .color-swatch.active::after {
+        content: ''; position: absolute; top: 50%; left: 50%;
+        width: 6px; height: 10px; border: solid #262626; border-width: 0 2px 2px 0;
+        transform: translate(-50%, -60%) rotate(45deg); opacity: 0.6;
+    }
+
+    /* MULTI-ROLE SELECTOR (PILLS) */
+    .role-pills-container {
+        display: flex;
+        flex-wrap: wrap; gap: 8px; padding: 10px; 
+        background: #fafafa; border: 1px solid #dbdbdb; border-radius: 10px;
+        min-height: 50px; align-items: center;
+    }
+    .role-pill {
+        padding: 6px 12px; border-radius: 20px; font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer; border: 1px solid #dbdbdb; background: white; color: #8e8e8e;
+        transition: 0.2s; display: flex; align-items: center; gap: 5px;
+        user-select: none;
+    }
+    .role-pill:hover { background: #f0f0f0; }
+    .role-pill.active { background: #0095f6; color: white;
+        border-color: #0095f6; box-shadow: 0 2px 5px rgba(0, 149, 246, 0.3); }
+    .role-pill.active i { color: white;
+    }
+
+    /* BOTÓN PRIMARIO */
+    .btn-primary { 
+        background: #0095f6;
+        color: white; border: none; padding: 14px; 
+        border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%;
+        font-size: 0.95rem; transition: 0.2s; letter-spacing: 0.5px;
+        box-shadow: 0 4px 10px rgba(0, 149, 246, 0.2);
+    }
+    .btn-primary:hover { background: #1877f2; transform: translateY(-1px);
+    }
+
+    /* TARJETAS ESTILO INSTAGRAM */
+    .section-wrapper { margin-bottom: 40px;
+    }
+    .section-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 0; border-bottom: 1px solid #dbdbdb; cursor: pointer; margin-bottom: 20px;
+    }
+    .section-header h3 { color: #262626;
+        margin: 0; font-size: 1.1rem; font-weight: 600; display:flex; align-items:center; gap:10px; }
+    .arrow-icon { color: #8e8e8e; transition: transform 0.3s;
+    }
+    .section-wrapper.collapsed .arrow-icon { transform: rotate(-90deg); }
+    .section-content { overflow: hidden;
+        transition: max-height 0.5s ease; max-height: 5000px; }
+    .section-wrapper.collapsed .section-content { max-height: 0;
+    }
+
+    .feed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px;
+    }
+
+    .card-insta {
+        background: white; /* Fallback */
+        border: 1px solid rgba(0,0,0,0.08); /* Borde más sutil para que luzca el color */
+        border-radius: 12px;
+        display: flex; flex-direction: column; overflow: hidden;
+        transition: box-shadow 0.3s, transform 0.2s;
+        /* backdrop-filter: blur(5px); Opcional para efecto vidrio si el fondo ayuda */
+    }
+    .card-insta:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-2px);
+    }
+
+    /* HEAD */
+    .insta-head {
+        padding: 12px 15px;
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .insta-date { font-size: 0.75rem; color: #666; /* Un poco más oscuro para contraste */
+        font-weight: 500; }
+    .insta-badge { font-size: 0.65rem; font-weight: 700; background:rgba(255,255,255,0.5); padding:3px 8px; border-radius:4px; color: #0095f6; text-transform: uppercase;
+        border: 1px solid rgba(0,0,0,0.05); }
+
+    /* MEDIA */
+    .insta-media {
+        width: 100%;
+        height: 320px; background: rgba(0,0,0,0.02);
+        display: flex; align-items: center; justify-content: center;
+        position: relative; border-bottom: 1px solid rgba(0,0,0,0.05); overflow:hidden;
+    }
+    .insta-media img { max-width: 100%; max-height: 100%; object-fit: contain; display: block;
+    }
+    
+    .doc-icon-container { text-align:center; }
+    .icon-doc { font-size: 5rem;
+        opacity: 0.8; margin-bottom:10px; }
+    .file-name { font-size:0.8rem; color:#666; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .embed-container { width:100%; height:100%; background:black; }
+    .embed-container iframe { width:100%; height:100%; border:none; display:block;
+    }
+
+    /* BODY */
+    .insta-body { padding: 15px;
+    }
+    .insta-actions { display: flex; gap: 10px; margin-bottom: 12px; }
+    .action-icon { font-size: 1.4rem;
+        color: #262626; cursor: pointer; background: none; border: none; padding: 0; }
+    .action-icon:hover { color: #8e8e8e;
+    }
+    
+    .insta-title { font-weight: 700; font-size: 1rem; color: #262626; margin-bottom: 6px;
+    }
+    .insta-desc { font-size: 0.9rem; color: #333; line-height: 1.5; white-space: pre-wrap;
+    }
+
+    .insta-btn-area { padding: 0 15px 15px 15px;
+    }
+    .btn-insta {
+        display: block; width: 100%; text-align: center;
+        background: rgba(255,255,255,0.6); color: #262626; text-decoration: none; border: 1px solid rgba(0,0,0,0.1);
+        padding: 10px 0; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+        transition: 0.2s;
+    }
+    .btn-insta:hover { background: #fff; border-color: #8e8e8e; }
+    .del-btn-icon { color: #ed4956;
+        margin-left: auto; cursor: pointer; transition: transform 0.2s; }
+    .del-btn-icon:hover { transform: scale(1.1);
+    }
+
+    /* WIDGETS */
+    .widget-box { display: flex; gap: 15px; align-items: center;
+    }
+    .clean-widget { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; border-radius: 6px; text-align: center;
+        backdrop-filter: blur(4px); }
+    .w-val { font-size: 1.1rem; font-weight: 700; display: block;
+    }
+</style>
+
+<div id="home-wrapper">
+
+    <div id="child-loader-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="home-content">
+        <div class="hero-card">
+            <div class="hero-text">
+                <h1>BIENVENIDO A GALHER COMUNICACION</h1>
+                <p>Centro de Novedades</p>
+            </div>
+       
+            <div class="widget-box">
+                <div class="clean-widget" style="text-align: right; padding-right: 20px; border-right: 1px solid rgba(255,255,255,0.3);">
+                    <span id="clk-time" style="font-size: 1.5rem; font-weight: 800; display: block; line-height: 1;">--:--</span>
+                    <span id="clk-date" style="font-size: 0.75rem; opacity: 0.9; font-weight: 500; 
+                    text-transform: capitalize;">...</span>
+                </div>
+                
+                <div class="clean-widget">
+                    <span class="w-val" id="mxn-val">...</span>
+                    <span style="font-size:0.6rem; opacity:0.8;">USD/MXN</span>
+      
+                </div>
+            </div>
+        </div>
+
+        <div class="ticker-container">
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+            
+                { "symbols": [ { "proName": "FX_IDC:USDMXN", "title": "USD/MXN" }, { "proName": "BMV:IPC", "title": "IPC" }, { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" } ], "colorTheme": "light", "displayMode": "regular", "locale": "es" }
+                </script>
+            </div>
+        </div>
+
+        <div id="admin-zone">
+            <div class="admin-header">
+         
+                <button class="tab-btn active" onclick="switchTab('tab-post')"><i class="ph-bold ph-pencil-simple"></i> Publicar</button>
+                <button class="tab-btn" onclick="switchTab('tab-sections')"><i class="ph-bold ph-squares-four"></i> Secciones</button>
+            </div>
+
+            <div id="tab-post" class="admin-body active">
+                <div class="form-grid">
+                    <div>
+  
+                        <div class="input-wrapper">
+                            <label class="input-label">Título de la Publicación</label>
+                            <input type="text" id="post-title" class="input-modern" placeholder="Ej: Reporte Trimestral">
+           
+                        </div>
+                        <div class="input-wrapper">
+                            <label class="input-label">Descripción</label>
+                            <textarea id="post-msg" class="input-modern" placeholder="Detalles importantes..."></textarea>
+                        </div>
+
+                        <div class="input-wrapper">
+                            <label class="input-label">Color de Fondo (Estilo)</label>
+                            <div class="color-picker-container" id="swatch-container">
+                                </div>
+                            <input type="hidden" id="post-bg-color" value="rgba(255,255,255,1)">
+                        </div>
+                        
+                        <div class="input-wrapper">
+                            
+                            <label class="input-label">¿Quién puede ver esto?</label>
+                            <div id="role-selector-box" class="role-pills-container">
+                                <div class="role-pill active" onclick="toggleRole('TODOS')">🌍 TODOS</div>
+                            </div>
+  
+                            <input type="hidden" id="selected-roles-input" value='["TODOS"]'>
+                        </div>
+                    </div>
+
+                    <div>
+       
+                         <div class="input-wrapper">
+                            <label class="input-label">Sección</label>
+                            <select id="post-section-select" class="input-modern"><option>Cargando...</option></select>
+                       
+                         </div>
+                        
+                        <div class="input-wrapper">
+                            <label class="input-label">Tipo de Contenido</label>
+                   
+                             <select id="post-type" class="input-modern" onchange="toggleInputs()">
+                                <option value="anuncio">📝 Solo Texto</option>
+                                <option value="imagen">🖼️ Imagen</option>
+                   
+                                <option value="pdf">📕 PDF</option>
+                                <option value="word">📘 Word (.doc)</option>
+                                <option value="excel">📗 Excel (.xls)</option>
+               
+                                <option value="link">🔗 Enlace Web</option>
+                                <option value="embed">🎥 Video / Embed</option>
+                            </select>
+                
+                        </div>
+
+                        <div id="input-area-file" style="display:none;
+                            margin-top:10px;">
+                            <label class="input-label">Archivo</label>
+                            <input type="file" id="post-file" class="input-modern" style="padding:10px;">
+                        </div>
+               
+                         <div id="input-area-text" style="display:none;
+                            margin-top:10px;">
+                            <label class="input-label" id="lbl-text-input">Enlace o Código</label>
+                            <input type="text" id="post-url-text" class="input-modern" placeholder="...">
+                        </div>
+            
+             
+                        <button id="btn-send" class="btn-primary" style="margin-top:20px;">
+                            <i class="ph-bold ph-paper-plane-right"></i> PUBLICAR
+                        </button>
+      
+                     </div>
+                </div>
+            </div>
+
+            <div id="tab-sections" class="admin-body">
+                <div style="display:flex;
+                    gap:15px; align-items:flex-end; margin-bottom:25px;">
+                    <div style="flex:1">
+                        <label class="input-label">Nombre Nueva Sección</label>
+                        <input type="text" id="sec-title" class="input-modern" placeholder="Ej: Recursos Humanos">
+                    
+                    </div>
+                    <div style="width:120px;">
+                        <label class="input-label">Icono</label>
+                        <select id="sec-icon" class="input-modern">
+                            
+                            <option value="ph-megaphone">📣</option>
+                            <option value="ph-users">👥</option>
+                            <option value="ph-chart-line">📈</option>
+                            <option value="ph-file-text">📄</option>
+            
+                            <option value="ph-star">⭐</option>
+                        </select>
+                    </div>
+                    <button id="btn-add-section" class="btn-primary" style="width:auto;
+                        padding:14px 25px;">Crear</button>
+                </div>
+                <div id="sections-list-manager" style="display:grid;
+                    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:10px;"></div>
+            </div>
+        </div>
+
+        <div id="dynamic-sections-area"></div>
+
+    </div>
+</div>
+
+<script>
+    (async function() {
+        const SB_URL = 'https://pavpbtfucesbjapaycsk.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdnBidGZ1Y2VzYmphcGF5Y3NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODg1MjksImV4cCI6MjA3OTg2NDUyOX0.Z16gzv5y9CDPzhQZKKTVr8UL49bW8y88LZ8Pbq_9ZhQ';
+        
+        let client;
+        if (window.supabase && typeof window.supabase.from === 'function') client = window.supabase;
+ 
+        else client = window.supabase.createClient(SB_URL, SB_KEY);
+
+        let rolUser = 'INVITADO', nombreUser = 'Visitante';
+        try { const s = localStorage.getItem('galher_session_v2'); if(s) { const d=JSON.parse(s); rolUser=d.rol; nombreUser=d.nombre; } } catch(e){}
+        const esAdmin = (rolUser === 'ADMINISTRADOR');
+
+        initReloj(); initDolar();
+        if(esAdmin) {
+            const z = document.getElementById('admin-zone');
+            if(z) { z.style.display = 'block'; setupAdminListeners(); initColorPicker(); }
+        }
+
+        try {
+            const { data: secciones } = await client.from('secciones').select('*').order('orden', {ascending:true});
+            const { data: posts } = await client.from('muro_inicio').select('*').order('created_at', {ascending:false});
+            const { data: rolesDB } = await client.from('roles_sistema').select('*');
+            if(secciones && posts) renderSections(secciones, posts);
+            updateAdminSelects(secciones || [], rolesDB || []);
+        } catch(e) { console.error(e);
+        }
+        finally {
+            setTimeout(() => {
+                const loader = document.getElementById('child-loader-overlay');
+                const content = document.getElementById('home-content');
+                if(loader) { loader.style.opacity = '0'; loader.style.visibility = 'hidden'; }
+               
+                if(content) content.classList.add('visible');
+            }, 500);
+        }
+
+        // --- RENDERIZADO (MULTI-ROL LOGIC) + COLOR ---
+        function renderSections(secciones, posts) {
+            const container = document.getElementById('dynamic-sections-area');
+            container.innerHTML = '';
+            if(!secciones.length) return;
+
+            secciones.forEach(sec => {
+                const secPosts = posts.filter(p => {
+                    const matchSec = p.seccion_id === sec.id;
+                    let targets = [];
+                    try { targets = JSON.parse(p.rol_objetivo); } catch(e) { targets = [p.rol_objetivo || 'TODOS']; }
+                    if(!Array.isArray(targets)) targets = ['TODOS'];
+                    const visible = targets.includes('TODOS') || targets.includes(rolUser) || esAdmin;
+                    return matchSec && visible;
+                });
+
+                const wrapId = `wrap-sec-${sec.id}`;
+                
+                let html = `
+                  
+                <div class="section-wrapper" id="${wrapId}">
+                        <div class="section-header" onclick="toggleSection('${wrapId}')">
+                            <h3><i class="ph-bold ${sec.icono}"></i> ${sec.titulo}</h3>
+                            <i class="ph-bold ph-caret-down arrow-icon"></i>
+                        </div>
+                        <div class="section-content">
+                            <div class="feed-grid">`;
+                
+                if(secPosts.length > 0) {
+                    secPosts.forEach(p => {
+                        const del = esAdmin ? `<i class="ph-bold ph-trash del-btn-icon" onclick="window.delPost(${p.id})"></i>` : '';
+                        let realType = p.tipo;
+                        if(p.tipo === 'link' && p.archivo_url && p.archivo_url.trim().startsWith('<')) realType = 'embed'; 
+
+                        let { mediaHTML, btnHTML } = generateCardContent(realType, p.archivo_url);
+                        const dateStr = new Date(p.created_at).toLocaleDateString('es-MX', {day:'numeric', month:'short'});
+                        
+                        let rolesStr = '';
+                        try { rolesStr = JSON.parse(p.rol_objetivo).join(', '); } catch { rolesStr = p.rol_objetivo; }
+                        const rolBadge = (esAdmin && rolesStr !== 'TODOS') ? `<span class="insta-badge" title="${rolesStr}">🔒 RESTRINGIDO</span>` : '';
+
+                        // APLICAR COLOR SUAVE AQUÍ
+                        // Si no tiene color, usa blanco por defecto
+                        const bgStyle = p.color_bg ? `style="background-color: ${p.color_bg};"` : '';
+
+                        html += `
+                            <div class="card-insta" ${bgStyle}>
+                                <div class="insta-head">
+                                    <span class="insta-date">${dateStr}</span>
+                                    ${rolBadge}
+                                    ${del}
+                                </div>
+                                <div class="insta-media">${mediaHTML}</div>
+                                <div class="insta-actions" style="padding:0 15px; margin-top:10px;">
+                                    <button class="action-icon"><i class="ph-heart"></i></button>
+                                </div>
+                                <div class="insta-body">
+                                    <div class="insta-title">${p.titulo}</div>
+                                    <div class="insta-desc">${p.mensaje || ''}</div>
+                                </div>
+                                ${btnHTML}
+                            </div>`;
+                    });
+                } else {
+                    html += `<div style="color:#8e8e8e; padding:15px; font-size:0.9rem;">No hay publicaciones disponibles.</div>`;
+                }
+                html += `</div></div></div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function generateCardContent(tipo, url) {
+            let mediaHTML = '', btnHTML = '';
+            const cleanUrl = url ? url.replace(/"/g, "'") : '';
+            switch(tipo) {
+                case 'imagen':
+                    if(url) {
+                        mediaHTML = `<img src="${cleanUrl}" loading="lazy">`;
+                        btnHTML = `<div class="insta-btn-area"><a href="${cleanUrl}" download target="_blank" class="btn-insta">Descargar</a></div>`;
+                    }
+                    break;
+                case 'pdf':
+                    mediaHTML = `<div class="doc-icon-container"><i class="ph-duotone ph-file-pdf icon-doc ph-file-pdf"></i><div class="file-name">PDF</div></div>`;
+                    if(url) btnHTML = `<div class="insta-btn-area"><a href="${cleanUrl}" target="_blank" class="btn-insta">Ver Documento</a></div>`;
+                    break;
+                case 'word':
+                    mediaHTML = `<div class="doc-icon-container"><i class="ph-duotone ph-file-doc icon-doc ph-file-doc"></i><div class="file-name">Word</div></div>`;
+                    if(url) btnHTML = `<div class="insta-btn-area"><a href="${cleanUrl}" target="_blank" class="btn-insta">Descargar</a></div>`;
+                    break;
+                case 'excel':
+                    mediaHTML = `<div class="doc-icon-container"><i class="ph-duotone ph-file-xls icon-doc ph-file-xls"></i><div class="file-name">Excel</div></div>`;
+                    if(url) btnHTML = `<div class="insta-btn-area"><a href="${cleanUrl}" target="_blank" class="btn-insta">Descargar</a></div>`;
+                    break;
+                case 'link':
+                    mediaHTML = `<div class="doc-icon-container"><i class="ph-duotone ph-link icon-doc"></i><div class="file-name">Enlace Externo</div></div>`;
+                    if(cleanUrl && !cleanUrl.startsWith('<')) {
+                        btnHTML = `<div class="insta-btn-area"><a href="${cleanUrl}" target="_blank" class="btn-insta">Ir al Sitio Web</a></div>`;
+                    }
+                    break;
+                case 'embed':
+                    if(cleanUrl) {
+                        let finalEmbed = cleanUrl;
+                        const ytMatch = cleanUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                        if (ytMatch && !cleanUrl.includes('<iframe')) {
+                            finalEmbed = `<iframe src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                        }
+                        mediaHTML = `<div class="embed-container">${finalEmbed}</div>`;
+                    }
+                    break;
+                default: 
+                    mediaHTML = `<div class="doc-icon-container"><i class="ph-duotone ph-text-aa icon-doc"></i></div>`;
+            }
+            return { mediaHTML, btnHTML };
+        }
+
+        window.toggleInputs = () => {
+            const type = document.getElementById('post-type').value;
+            const fileArea = document.getElementById('input-area-file');
+            const textArea = document.getElementById('input-area-text');
+            const lbl = document.getElementById('lbl-text-input');
+
+            fileArea.style.display = 'none';
+            textArea.style.display = 'none';
+            if(['imagen','pdf','word','excel'].includes(type)) {
+                fileArea.style.display = 'block';
+            } else if(type === 'link') {
+                textArea.style.display = 'block';
+                lbl.innerText = "Pegar URL (ej. https://google.com)";
+            } else if(type === 'embed') {
+                textArea.style.display = 'block';
+                lbl.innerText = "Pegar Link de YouTube o Código Embed";
+            }
+        };
+        window.toggleSection = (id) => { document.getElementById(id).classList.toggle('collapsed'); };
+
+        // --- COLORES SUAVES Y TRASLUCIDOS (85% Opacidad) ---
+        function initColorPicker() {
+            const swatches = [
+                { c: 'rgba(255,255,255,1)', t: 'Blanco' },
+                { c: 'rgba(240,249,255,0.85)', t: 'Azul Cielo' },   /* Sky */
+                { c: 'rgba(240,253,244,0.85)', t: 'Menta' },        /* Green */
+                { c: 'rgba(255,251,235,0.85)', t: 'Crema' },        /* Amber */
+                { c: 'rgba(255,241,242,0.85)', t: 'Rosa' },         /* Rose */
+                { c: 'rgba(250,245,255,0.85)', t: 'Lavanda' }       /* Purple */
+            ];
+            const container = document.getElementById('swatch-container');
+            const hiddenInput = document.getElementById('post-bg-color');
+            
+            if(container) {
+                container.innerHTML = '';
+                swatches.forEach((s, idx) => {
+                    const el = document.createElement('div');
+                    el.className = `color-swatch ${idx===0 ? 'active':''}`;
+                    el.style.backgroundColor = s.c;
+                    el.title = s.t;
+                    el.onclick = () => {
+                        document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('active'));
+                        el.classList.add('active');
+                        hiddenInput.value = s.c;
+                    };
+                    container.appendChild(el);
+                });
+            }
+        }
+
+        // --- GESTIÓN DE ROLES MÚLTIPLES ---
+        let currentRoles = ['TODOS'];
+        window.toggleRole = (role) => {
+            if(role === 'TODOS') {
+                currentRoles = ['TODOS'];
+            } else {
+                if(currentRoles.includes('TODOS')) currentRoles = [];
+                if(currentRoles.includes(role)) currentRoles = currentRoles.filter(r => r !== role);
+                else currentRoles.push(role);
+                if(currentRoles.length === 0) currentRoles = ['TODOS'];
+            }
+            renderRolePills();
+        };
+        function renderRolePills(dbRoles = []) {
+            if(dbRoles.length) window.globalDbRoles = dbRoles;
+            const rolesToRender = window.globalDbRoles || [];
+            const container = document.getElementById('role-selector-box');
+            if(!container) return;
+
+            let html = `<div class="role-pill ${currentRoles.includes('TODOS')?'active':''}" onclick="toggleRole('TODOS')">🌍 TODOS</div>`;
+            rolesToRender.forEach(r => {
+                const isActive = currentRoles.includes(r.nombre);
+                html += `<div class="role-pill ${isActive?'active':''}" onclick="toggleRole('${r.nombre}')">${isActive?'<i class="ph-bold ph-check"></i>':''} ${r.nombre}</div>`;
+            });
+            container.innerHTML = html;
+            document.getElementById('selected-roles-input').value = JSON.stringify(currentRoles);
+        }
+
+        function updateAdminSelects(secciones, rolesDB) {
+            if(!esAdmin) return;
+            const selSec = document.getElementById('post-section-select');
+            const lstSec = document.getElementById('sections-list-manager');
+            if(selSec) selSec.innerHTML = secciones.map(s => `<option value="${s.id}">${s.titulo}</option>`).join('');
+            if(lstSec) lstSec.innerHTML = secciones.map(s => `
+                <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #dbdbdb; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.9rem; font-weight:600;"><i class="ph-bold ${s.icono}"></i> ${s.titulo}</span>
+                    <button onclick="window.delSec(${s.id})" style="border:none; background:transparent; color:#ed4956; cursor:pointer;"><i class="ph-bold ph-trash"></i></button>
+                </div>`).join('');
+            renderRolePills(rolesDB);
+        }
+
+        function setupAdminListeners() {
+            document.getElementById('btn-send').onclick = async function() {
+                const btn = this;
+                btn.innerHTML = `Publicando...`; btn.disabled = true;
+                try {
+                    const titulo = document.getElementById('post-title').value;
+                    const msg = document.getElementById('post-msg').value;
+                    const secId = document.getElementById('post-section-select').value;
+                    const rolObj = document.getElementById('selected-roles-input').value; 
+                    const tipo = document.getElementById('post-type').value;
+                    const colorBg = document.getElementById('post-bg-color').value; // NUEVO
+
+                    if(!titulo || !secId) throw new Error("Faltan datos obligatorios");
+
+                    let finalUrl = null;
+                    if(['imagen','pdf','word','excel'].includes(tipo)) {
+                        const fInput = document.getElementById('post-file');
+                        if(fInput.files.length) {
+                            const f = fInput.files[0];
+                            const name = `file_${Date.now()}_${f.name.replace(/[^a-zA-Z0-9.-]/g, '')}`; // Sanea nombre
+                            const { error: upErr } = await client.storage.from('archivos_muro').upload(name, f);
+                            if(upErr) throw upErr;
+                            const { data } = client.storage.from('archivos_muro').getPublicUrl(name);
+                            finalUrl = data.publicUrl;
+                        }
+                    } else {
+                        finalUrl = document.getElementById('post-url-text').value;
+                        if(tipo === 'link' && finalUrl && finalUrl.trim().startsWith('<')) {
+                            if(confirm("Detectamos HTML. ¿Cambiar a Embed?")) tipo = 'embed';
+                        }
+                    }
+                    
+                    await client.from('muro_inicio').insert([{
+                        titulo, mensaje: msg, tipo, archivo_url: finalUrl, 
+                        autor: nombreUser, seccion_id: secId, rol_objetivo: rolObj,
+                        color_bg: colorBg
+                    }]);
+                    
+                    location.reload();
+                } catch(e) { alert(e.message); btn.innerHTML = "PUBLICAR"; btn.disabled = false;
+                }
+            };
+            document.getElementById('btn-add-section').onclick = async function() {
+                const t = document.getElementById('sec-title').value;
+                const i = document.getElementById('sec-icon').value;
+                if(t) {
+                    await client.from('secciones').insert([{titulo: t, icono: i}]);
+                    location.reload();
+                }
+            };
+        }
+
+        window.delPost = async(id) => { if(confirm("¿Borrar?")) { await client.from('muro_inicio').delete().eq('id',id); location.reload(); }};
+        window.delSec = async(id) => { if(confirm("¿Borrar sección?")) { await client.from('secciones').delete().eq('id',id); location.reload(); }};
+        window.switchTab = (id) => {
+            document.querySelectorAll('.admin-body').forEach(d=>d.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(d=>d.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
+        };
+
+        // --- RELOJ ACTUALIZADO (FORMATO 12H + FECHA ESPAÑOL) ---
+        function initReloj() {
+            const timeEl = document.getElementById('clk-time');
+            const dateEl = document.getElementById('clk-date');
+
+            const update = () => {
+                const now = new Date();
+                // Hora 12h (04:30 PM)
+                const timeStr = now.toLocaleTimeString('es-MX', {
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                });
+                // Fecha (Jueves 11/12/2025)
+                const diaSemana = now.toLocaleDateString('es-MX', { weekday: 'long' });
+                // "jueves"
+                const dia = now.getDate().toString().padStart(2, '0');
+                const mes = (now.getMonth() + 1).toString().padStart(2, '0');
+                const anio = now.getFullYear();
+                // Capitalizar primera letra del día
+                const diaCap = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+                const dateStr = `${diaCap} ${dia}/${mes}/${anio}`;
+
+                if(timeEl) timeEl.innerText = timeStr;
+                if(dateEl) dateEl.innerText = dateStr;
+            };
+
+            setInterval(update, 1000);
+            update();
+        }
+
+        async function initDolar() { try{
+            const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            const j = await r.json();
+            document.getElementById('mxn-val').innerText = `$${j.rates.MXN.toFixed(2)}`;
+        }catch{}}
+    })();
+</script>

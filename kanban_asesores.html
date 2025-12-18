@@ -1,0 +1,490 @@
+<div class="kanban-wrapper animate-fade-in">
+
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        .kanban-container {
+            height: calc(100vh - 85px);
+            display: flex;
+            flex-direction: column;
+            font-family: 'Inter', sans-serif;
+            background-color: #eef2f6;
+            padding: 15px;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .kanban-header-strip {
+            display: flex; justify-content: space-between; align-items: center; padding: 0 5px 15px 5px;
+        }
+
+        .kanban-title {
+            font-size: 1.4rem; font-weight: 800;
+            background: linear-gradient(90deg, #0061A9, #003a98);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-transform: uppercase; display: flex; align-items: center; gap: 10px;
+        }
+
+        /* --- TABLERO --- */
+        .board-scroll {
+            display: flex; overflow-x: auto; gap: 20px; height: 100%; padding-bottom: 15px;
+            scrollbar-width: thin; scrollbar-color: #94a3b8 #e2e8f0;
+        }
+        .board-scroll::-webkit-scrollbar { height: 10px; }
+        .board-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        .board-scroll::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 10px; border: 2px solid #e2e8f0; }
+
+        /* --- COLUMNAS --- */
+        .k-column {
+            min-width: 300px; width: 300px;
+            background: #f8fafc; border-radius: 12px;
+            display: flex; flex-direction: column; flex-shrink: 0;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+        .k-column.drag-over { background: #eff6ff; border-color: #3b82f6; transform: scale(1.01); }
+
+        .k-header {
+            padding: 12px;
+            font-size: 0.7rem; font-weight: 800; color: white;
+            text-transform: uppercase;
+            background: #0061A9; border-radius: 11px 11px 0 0;
+            display: flex; justify-content: space-between; align-items: center;
+            /* AJUSTE PARA TEXTO LARGO */
+            white-space: normal; line-height: 1.2; text-align: left; gap: 10px;
+            min-height: 50px;
+        }
+
+        .k-counter {
+            background: rgba(255,255,255,0.2); color: white;
+            padding: 4px 8px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+        }
+
+        .k-body {
+            flex: 1; padding: 10px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        /* --- TARJETAS --- */
+        .k-card {
+            background: white; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer; border: 1px solid #e2e8f0;
+            border-left: 5px solid #cbd5e1;
+            transition: all 0.2s; padding: 12px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .k-card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateY(-3px); z-index: 5; }
+        
+        /* Colores Borde */
+        .k-card[data-profile="PROVISIONAL"] { border-left-color: #f59e0b; }
+        .k-card[data-profile="DEFINITIVA"] { border-left-color: #10b981; }
+        .k-card[data-profile="WALMART"] { border-left-color: #3b82f6; }
+
+        .kc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+        .kc-name { font-weight: 700; font-size: 0.85rem; color: #1e293b; text-transform: uppercase; line-height: 1.2; }
+        .kc-plaza { background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; }
+        .kc-row { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #64748b; }
+        .kc-row i { color: #0061A9; font-size: 0.9rem; }
+        .kc-note { background: #fef9c3; border: 1px solid #fde047; color: #854d0e; padding: 6px; border-radius: 4px; font-size: 0.7rem; margin-top: 5px; font-style: italic; }
+        .kc-note:empty { display: none; }
+
+        /* --- MODAL FICHA TÉCNICA (NUEVO ESTILO) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        
+        .modal-content { 
+            background: #f8fafc; width: 850px; max-width: 95%; height: 90vh; 
+            border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* Hero del Modal */
+        .m-hero {
+            background: linear-gradient(135deg, #0061A9 0%, #003a98 100%);
+            color: white; padding: 20px 30px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .m-hero h2 { font-size: 1.5rem; margin: 0; font-weight: 800; text-transform: uppercase; }
+        .m-hero-badges { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .m-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+
+        .m-body { padding: 30px; overflow-y: auto; flex: 1; }
+        
+        /* Secciones del Modal */
+        .m-section { 
+            background: white; border-radius: 10px; padding: 20px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;
+            border: 1px solid #e2e8f0; border-top: 4px solid #cbd5e1;
+        }
+        .m-section-title { font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        
+        /* Colores de sección */
+        .sec-personal { border-top-color: #3b82f6; }
+        .sec-process { border-top-color: #f59e0b; }
+        .sec-cert { border-top-color: #10b981; }
+        .sec-internal { border-top-color: #64748b; }
+
+        .m-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        
+        /* Inputs Estilizados */
+        .m-field label { display: block; font-size: 0.7rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; }
+        .m-input { 
+            width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; 
+            font-size: 0.85rem; color: #1e293b; background: #fff; font-family: inherit;
+            transition: border 0.2s;
+        }
+        .m-input:focus { border-color: #0061A9; outline: none; }
+        .m-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+        /* Footer Acciones */
+        .m-footer { 
+            padding: 15px 30px; background: white; border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .btn-m { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; transition: transform 0.1s; }
+        .btn-m:active { transform: scale(0.98); }
+        .btn-save { background: #0061A9; color: white; }
+        .btn-close { background: #e2e8f0; color: #475569; }
+        .btn-trash { background: #fee2e2; color: #ef4444; }
+
+        .loader-center { display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; color: #0061A9; }
+    </style>
+
+    <div class="kanban-container">
+        <div class="kanban-header-strip">
+            <div class="kanban-title"><i class="ph-duotone ph-kanban"></i> TABLERO DE SEGUIMIENTO</div>
+            <button class="btn-pill" onclick="initKanban()" style="background:white; border:1px solid #ddd; padding:8px 15px; border-radius:50px; cursor:pointer; font-weight:600; color:#0061A9;">
+                <i class="ph-bold ph-arrows-clockwise"></i> ACTUALIZAR
+            </button>
+        </div>
+        <div id="boardContainer" class="board-scroll">
+            <div class="loader-center"><i class="ph ph-spinner ph-spin" style="font-size: 2rem;"></i></div>
+        </div>
+    </div>
+
+    <div id="cardModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="m-hero">
+                <div>
+                    <h2 id="mHeroName">NOMBRE CANDIDATO</h2>
+                    <div class="m-hero-badges">
+                        <span class="m-badge" id="mHeroId">ID: --</span>
+                        <span class="m-badge" id="mHeroPlaza">PLAZA</span>
+                    </div>
+                </div>
+                <button onclick="closeCardModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                    <i class="ph-bold ph-x"></i>
+                </button>
+            </div>
+
+            <div class="m-body" id="modalFormBody">
+                </div>
+
+            <div class="m-footer">
+                <button class="btn-m btn-trash" onclick="deleteCard()"><i class="ph-bold ph-trash"></i> ELIMINAR</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-m btn-close" onclick="closeCardModal()">CANCELAR</button>
+                    <button class="btn-m btn-save" onclick="saveCard()"><i class="ph-bold ph-floppy-disk"></i> GUARDAR CAMBIOS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        // --- 1. CONFIGURACIÓN ---
+        
+        // ORDEN LÓGICO DE ESTATUS (Para saber "qué tan avanzado" va)
+        const STATUS_FLOW = [
+            "SIN ASIGNAR",
+            "ENTREVISTA PROGRAMADA",
+            "EXAMEN PROGRAMADO",
+            "SOLICITUD DE DOCUMENTOS",
+            "CREACION DE CONTRATOS",
+            "ENTREVISTA EN SUCURSAL Y APERTURA DE CUENTA DE NOMINA",
+            "TURNADO A VISITA RESIDENCIAL",
+            "PLATAFORMA CARSO Y CURSOS DE CERTIFICACION",
+            "EXAMENES DE CERTIFICACION Y EXPEDIENTE ELECTRONICO",
+            "CREACION DE PLATAFORMA INBURSA Y CORREO INSTITUCIONAL",
+            "SOLICITUD DE TARJETAS DE IDENTIFICACION",
+            "CURSOS COMERCIALES-CAPACITACION INICIAL Y CREACION DE RRSS",
+            "ASESOR VIGENTE"
+        ];
+
+        // LISTAS PARA SELECTS
+        const OPCIONES = {
+            plazas: ["AGUASCALIENTES","BAJA CALIFORNIA","BAJA CALIFORNIA SUR","CAMPECHE","COAHUILA","COLIMA","CHIAPAS","CHIHUAHUA","CIUDAD DE MEXICO","DURANGO","GUANAJUATO","GUERRERO","HIDALGO","JALISCO","MEXICO","MICHOACAN","MORELOS","NAYARIT","NUEVO LEON","OAXACA","PUEBLA","QUERETARO","QUINTANA ROO","SAN LUIS POTOSI","SINALOA","SONORA","TABASCO","TAMAULIPAS","TLAXCALA","VERACRUZ","YUCATAN","ZACATECAS"],
+            perfiles: ["PROVISIONAL", "DEFINITIVA", "WALMART"],
+            estado_civil: ["SOLTERO", "CASADO", "UNION LIBRE", "DIVORCIADO"]
+        };
+
+        let currentCardId = null;
+        let allCandidatesCache = [];
+
+        // --- 2. INICIALIZACIÓN ---
+        window.initKanban = async () => {
+            const board = document.getElementById('boardContainer');
+            // board.innerHTML = '<div class="loader-center"><i class="ph ph-spinner ph-spin" style="font-size: 2rem;"></i></div>';
+            
+            const { data, error } = await supabase.from('candidates').select('*').order('created_at', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                board.innerHTML = '<div style="text-align:center; padding:20px; color:red;">Error de conexión</div>';
+                return;
+            }
+
+            allCandidatesCache = data; // Guardamos cache para acceso rápido
+            renderBoard(data);
+        };
+
+        // --- 3. RENDER TABLERO ---
+        function renderBoard(candidates) {
+            const board = document.getElementById('boardContainer');
+            board.innerHTML = '';
+
+            STATUS_FLOW.forEach(statusName => {
+                const items = candidates.filter(c => (c.status || 'SIN ASIGNAR').toUpperCase() === statusName);
+
+                const colDiv = document.createElement('div');
+                colDiv.className = 'k-column';
+                colDiv.dataset.status = statusName;
+
+                // Drag & Drop Events
+                colDiv.addEventListener('dragover', e => { e.preventDefault(); colDiv.classList.add('drag-over'); });
+                colDiv.addEventListener('dragleave', () => colDiv.classList.remove('drag-over'));
+                colDiv.addEventListener('drop', handleDrop);
+
+                colDiv.innerHTML = `
+                    <div class="k-header">
+                        <span>${statusName}</span>
+                        <span class="k-counter">${items.length}</span>
+                    </div>
+                    <div class="k-body">
+                        ${items.map(c => createCardHTML(c)).join('')}
+                    </div>
+                `;
+                board.appendChild(colDiv);
+            });
+
+            // Card Events
+            document.querySelectorAll('.k-card').forEach(card => {
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', card.dataset.id);
+                    card.style.opacity = '0.5';
+                });
+                card.addEventListener('dragend', () => card.style.opacity = '1');
+                card.addEventListener('click', () => openDynamicModal(card.dataset.id));
+            });
+        }
+
+        function createCardHTML(c) {
+            const profile = (c.perfil || '').toUpperCase();
+            return `
+                <div class="k-card" draggable="true" data-id="${c.id}" data-profile="${profile}">
+                    <div class="kc-header">
+                        <div class="kc-name">${c.full_name}</div>
+                        <span class="kc-plaza">${c.plaza || 'N/A'}</span>
+                    </div>
+                    <div class="kc-row"><i class="ph-bold ph-phone"></i> ${c.phone || '--'}</div>
+                    <div class="kc-row"><i class="ph-bold ph-envelope-simple"></i> ${c.email || '--'}</div>
+                    <div class="kc-row"><i class="ph-bold ph-briefcase"></i> ${c.perfil || '--'}</div>
+                    <div class="kc-note">${c.notas_rapidas || ''}</div>
+                </div>
+            `;
+        }
+
+        // --- 4. DRAG & DROP LOGIC ---
+        async function handleDrop(e) {
+            e.preventDefault();
+            const col = e.currentTarget;
+            col.classList.remove('drag-over');
+            const cardId = e.dataTransfer.getData('text/plain');
+            const newStatus = col.dataset.status;
+
+            if(!cardId || !newStatus) return;
+
+            // Actualizar solo estatus
+            try {
+                const { error } = await supabase.from('candidates').update({ status: newStatus }).eq('id', cardId);
+                if(error) throw error;
+                initKanban(); // Recargar para reordenar
+            } catch(err) { alert("Error al mover: " + err.message); }
+        }
+
+        // --- 5. MODAL DINÁMICO (LÓGICA CORE) ---
+        window.openDynamicModal = (id) => {
+            const c = allCandidatesCache.find(x => x.id === id);
+            if(!c) return;
+            currentCardId = id;
+
+            // 1. Llenar Hero
+            document.getElementById('mHeroName').innerText = c.full_name;
+            document.getElementById('mHeroId').innerText = `ID: ${c.id.split('-')[0]}`;
+            document.getElementById('mHeroPlaza').innerText = c.plaza || 'SIN PLAZA';
+
+            // 2. Determinar Nivel de Progreso (Índice 0 a 12)
+            const currentStatusIdx = STATUS_FLOW.indexOf((c.status || '').toUpperCase());
+            // Si no encuentra estatus, asume 0 (Principio)
+            const safeIdx = currentStatusIdx === -1 ? 0 : currentStatusIdx;
+
+            // 3. Construir Formulario Condicional
+            const formContainer = document.getElementById('modalFormBody');
+            let html = '';
+
+            // --- HELPERS PARA GENERAR INPUTS ---
+            const mkInput = (label, id, val) => `
+                <div class="m-field">
+                    <label>${label}</label>
+                    <input type="text" id="${id}" class="m-input" value="${val || ''}">
+                </div>`;
+            
+            const mkDate = (label, id, val) => `
+                <div class="m-field">
+                    <label>${label}</label>
+                    <input type="date" id="${id}" class="m-input" value="${val ? val.split('T')[0] : ''}">
+                </div>`;
+
+            const mkSelect = (label, id, val, options) => {
+                const opts = options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('');
+                return `
+                <div class="m-field">
+                    <label>${label}</label>
+                    <select id="${id}" class="m-input">${opts}</select>
+                </div>`;
+            };
+
+            // SECCIÓN 1: DATOS GENERALES (SIEMPRE VISIBLE)
+            html += `
+            <div class="m-section sec-personal">
+                <div class="m-section-title">DATOS GENERALES & CONTACTO</div>
+                <div class="m-grid">
+                    ${mkInput('Nombre Completo', 'f_name', c.full_name)}
+                    ${mkInput('Teléfono', 'f_phone', c.phone)}
+                    ${mkInput('Email', 'f_email', c.email)}
+                    ${mkSelect('Plaza', 'f_plaza', c.plaza, OPCIONES.plazas)}
+                    ${mkSelect('Perfil', 'f_perfil', c.perfil, OPCIONES.perfiles)}
+                    <div class="m-field" style="grid-column: 1/-1;">
+                        <label>Estatus Actual (Mueve la tarjeta)</label>
+                        <select id="f_status" class="m-input">
+                            ${STATUS_FLOW.map(s => `<option value="${s}" ${s===(c.status||'').toUpperCase()?'selected':''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            </div>`;
+
+            // SECCIÓN 2: NOTAS RÁPIDAS (SIEMPRE VISIBLE)
+            html += `
+            <div class="m-section sec-internal">
+                <div class="m-section-title">NOTAS DE TABLERO</div>
+                <div class="m-field">
+                    <label style="color:#b45309;">📝 Nota Visible en Tarjeta</label>
+                    <textarea id="f_notas" class="m-input" rows="2" style="background:#fefce8; border-color:#fde047;">${c.notas_rapidas || ''}</textarea>
+                </div>
+            </div>`;
+
+            // SECCIÓN 3: FECHAS Y RECLUTAMIENTO (Visible si >= SOLICITUD DOCS o tiene fechas)
+            // Indice 3 es "SOLICITUD DE DOCUMENTOS"
+            if (safeIdx >= 3 || c.fecha_cita_sucursal || c.fecha_entrevista) {
+                html += `
+                <div class="m-section sec-process">
+                    <div class="m-section-title">PROCESO DE RECLUTAMIENTO</div>
+                    <div class="m-grid">
+                        ${mkDate('Fecha Cita Sucursal', 'f_cita', c.fecha_cita_sucursal)}
+                        ${mkDate('Fecha Entrevista', 'f_entrevista', c.interview_date)}
+                        <div class="m-field">
+                            <label>Trimestre (Auto)</label>
+                            <input type="text" class="m-input" value="${c.trimestre_reclutamiento || '--'}" disabled style="background:#f1f5f9;">
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            // SECCIÓN 4: CERTIFICACIÓN (Visible si >= PLATAFORMA CARSO)
+            // Indice 7 es "PLATAFORMA CARSO..."
+            if (safeIdx >= 7 || c.fecha_examen || c.fecha_certificacion) {
+                html += `
+                <div class="m-section sec-cert">
+                    <div class="m-section-title">CERTIFICACIÓN</div>
+                    <div class="m-grid">
+                        ${mkDate('Fecha Examen', 'f_examen', c.fecha_examen)}
+                        ${mkDate('Fecha Certificación', 'f_cert', c.fecha_certificacion)}
+                        ${mkInput('Clave Asesor (Si ya tiene)', 'f_clave', c.clave_asesor)}
+                    </div>
+                </div>`;
+            }
+
+            formContainer.innerHTML = html;
+            document.getElementById('cardModal').classList.add('active');
+        };
+
+        window.closeCardModal = () => {
+            document.getElementById('cardModal').classList.remove('active');
+            currentCardId = null;
+        };
+
+        // --- 6. GUARDAR CAMBIOS ---
+        window.saveCard = async () => {
+            if(!currentCardId) return;
+            const btn = document.querySelector('.btn-save');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> GUARDANDO...';
+
+            // Recolectar datos básicos
+            const updates = {
+                full_name: document.getElementById('f_name').value.toUpperCase(),
+                phone: document.getElementById('f_phone').value,
+                email: document.getElementById('f_email').value.toUpperCase(),
+                plaza: document.getElementById('f_plaza').value,
+                perfil: document.getElementById('f_perfil').value,
+                status: document.getElementById('f_status').value,
+                notas_rapidas: document.getElementById('f_notas').value
+            };
+
+            // Recolectar datos condicionales (si existen en el DOM)
+            if(document.getElementById('f_cita')) {
+                const fechaCita = document.getElementById('f_cita').value;
+                updates.fecha_cita_sucursal = fechaCita || null;
+                
+                // Recalcular Trimestre si cambió la fecha
+                if(fechaCita) {
+                    const d = new Date(fechaCita + 'T00:00:00');
+                    if(!isNaN(d)) {
+                        const q = Math.floor(d.getMonth() / 3) + 1;
+                        updates.trimestre_reclutamiento = `${d.getFullYear()} TRIM ${q}`;
+                    }
+                }
+            }
+            if(document.getElementById('f_entrevista')) updates.interview_date = document.getElementById('f_entrevista').value || null;
+            if(document.getElementById('f_examen')) updates.fecha_examen = document.getElementById('f_examen').value || null;
+            if(document.getElementById('f_cert')) updates.fecha_certificacion = document.getElementById('f_cert').value || null;
+            if(document.getElementById('f_clave')) updates.clave_asesor = document.getElementById('f_clave').value.toUpperCase();
+
+            try {
+                const { error } = await supabase.from('candidates').update(updates).eq('id', currentCardId);
+                if(error) throw error;
+                closeCardModal();
+                initKanban(); // Refrescar todo
+            } catch(err) {
+                alert("Error al guardar: " + err.message);
+                btn.innerHTML = originalHtml;
+            }
+        };
+
+        window.deleteCard = async () => {
+            if(!confirm("¿ELIMINAR DEFINITIVAMENTE?")) return;
+            try {
+                const { error } = await supabase.from('candidates').delete().eq('id', currentCardId);
+                if(error) throw error;
+                closeCardModal();
+                initKanban();
+            } catch(err) { alert("Error: " + err.message); }
+        };
+
+        initKanban();
+    })();
+    </script>
+</div>

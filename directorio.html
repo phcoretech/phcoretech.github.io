@@ -1,0 +1,585 @@
+<style>
+    /* --- SISTEMA DE DISEÑO CORPORATIVO --- */
+    :root {
+        --inb-navy: #003366;       
+        --inb-blue-soft: #005DAA;  
+        --inb-red: #E30613;        
+        --white: #FFFFFF;          
+        --bg-light: #F8FAFC;       
+        --bg-panel: #F1F5F9;       
+        --border: #E2E8F0;         
+        --text-main: #1e293b;      
+        --text-sec: #64748b;       
+        --radius-card: 12px;
+        --radius-input: 6px;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; outline: none; font-family: 'Inter', sans-serif; }
+
+    body {
+        background-color: transparent;
+        color: var(--text-main);
+        height: 100%;
+        overflow: hidden; 
+    }
+
+    h2, h3 { color: var(--inb-navy); font-weight: 700; margin: 0 0 10px 0; }
+
+    /* LAYOUT */
+    .dir-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        height: 85vh; 
+    }
+
+    /* SIDEBAR */
+    .dir-sidebar {
+        background: var(--white);
+        border-radius: var(--radius-card);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-light);
+    }
+
+    .contact-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    .contact-item {
+        padding: 12px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        border-bottom: 1px solid transparent;
+        transition: all 0.2s;
+        margin-bottom: 5px;
+    }
+    .contact-item:hover { background: var(--bg-light); }
+    .contact-item.active { background: #f0f9ff; border: 1px solid #bae6fd; }
+    
+    .c-name { font-weight: 600; font-size: 0.9rem; color: var(--inb-navy); }
+    .c-meta { font-size: 0.75rem; color: var(--text-sec); display: flex; justify-content: space-between; margin-top: 2px;}
+
+    /* MAIN PANEL */
+    .dir-main {
+        background: var(--white);
+        border-radius: var(--radius-card);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        padding: 30px;
+        overflow-y: auto;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-sec);
+        text-align: center;
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
+
+    /* FORM & DETAILS */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .full-width { grid-column: span 2; }
+
+    label {
+        display: block; color: var(--text-sec); font-size: 0.75rem; 
+        font-weight: 700; text-transform: uppercase; margin-bottom: 5px;
+    }
+    
+    input, select, textarea {
+        width: 100%; padding: 12px;
+        background: var(--bg-light);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-input);
+        color: var(--text-main);
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+        background: var(--white); border-color: var(--inb-blue-soft);
+        box-shadow: 0 0 0 3px rgba(0, 93, 170, 0.1);
+    }
+
+    /* MAP CONTAINER (Nuevo) */
+    .map-container {
+        width: 100%;
+        height: 300px;
+        background: #eee;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+    }
+    .map-container iframe { width: 100%; height: 100%; border: none; }
+
+    /* BOTONES */
+    button, .btn-link { 
+        cursor: pointer; font-weight: 600; border-radius: var(--radius-input); 
+        transition: 0.2s; border: none; padding: 10px 20px; 
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-primary { background: var(--inb-navy); color: white; }
+    .btn-primary:hover { background: #002244; }
+    
+    .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-sec); }
+    .btn-secondary:hover { border-color: var(--inb-navy); color: var(--inb-navy); }
+    
+    .btn-danger { background: white; border: 1px solid var(--inb-red); color: var(--inb-red); }
+    .btn-danger:hover { background: var(--inb-red); color: white; }
+
+    .tag-type {
+        display: inline-block; padding: 2px 8px; border-radius: 4px;
+        font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+        background: var(--bg-panel); color: var(--text-sec);
+    }
+    .hidden { display: none !important; }
+</style>
+
+<div class="dir-layout">
+    
+    <aside class="dir-sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin-bottom: 15px;">Directorio</h3>
+            <div style="position: relative;">
+                <input type="text" id="search-input" placeholder="Buscar..." onkeyup="filtrarContactos()">
+                <i class="ph-bold ph-magnifying-glass" style="position: absolute; right: 12px; top: 12px; color: var(--text-sec);"></i>
+            </div>
+            <button class="btn-primary" onclick="nuevoContacto()" style="width: 100%; margin-top: 15px;">
+                <i class="ph-bold ph-plus"></i> Nuevo Contacto
+            </button>
+        </div>
+        
+        <div id="lista-contactos" class="contact-list">
+            <div style="text-align: center; padding: 20px; color: var(--text-sec);">
+                <i class="ph-duotone ph-spinner-gap spin" style="font-size: 1.5rem;"></i>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dir-main">
+        
+        <div id="view-empty" class="empty-state">
+            <i class="ph-duotone ph-address-book empty-icon"></i>
+            <h3>Selecciona un contacto</h3>
+            <p>O utiliza el botón para agregar uno nuevo.</p>
+        </div>
+
+        <div id="view-detail" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                <div>
+                    <span class="tag-type" id="det-tipo">TIPO</span>
+                    <h2 id="det-titulo" style="font-size: 1.8rem; margin: 10px 0 5px 0;">--</h2>
+                    <span id="det-plaza" style="color: var(--inb-blue-soft); font-weight: 600;">--</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" onclick="editarContactoActual()">
+                        <i class="ph-bold ph-pencil-simple"></i> Editar
+                    </button>
+                    <button class="btn-danger" onclick="eliminarContacto()">
+                        <i class="ph-bold ph-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label>Correo Electrónico</label>
+                    <div id="det-correo" style="font-size: 1.1rem; padding: 10px 0;">--</div>
+                </div>
+                <div>
+                    <label>Teléfono / Ext.</label>
+                    <div id="det-telefono" style="font-size: 1.1rem; padding: 10px 0;">--</div>
+                </div>
+
+                <div class="full-width">
+                    <label>Ubicación</label>
+                    <div style="font-size: 1rem; margin-bottom: 10px; color: #0c4a6e;">
+                        <i class="ph-bold ph-map-pin"></i> <span id="det-direccion">--</span>
+                    </div>
+                    
+                    <div id="map-area" class="hidden"></div>
+                    <div id="map-link-btn" class="hidden" style="margin-top: 5px;">
+                        <a id="btn-external-map" href="#" target="_blank" class="btn-secondary">
+                            Abrir en Google Maps <i class="ph-bold ph-arrow-square-out"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="full-width">
+                    <label>Descripción / Notas</label>
+                    <div id="det-desc" style="background: var(--bg-panel); padding: 15px; border-radius: 8px; line-height: 1.6;">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-form" class="hidden">
+            <h3 id="form-header-title" style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                <i class="ph-bold ph-pencil-simple"></i> Registrar Contacto
+            </h3>
+
+            <div class="form-grid">
+                <div>
+                    <label>Tipo de Contacto</label>
+                    <select id="inp-tipo">
+                        <option value="PLAZA">🏢 Plaza / Sucursal</option>
+                        <option value="DEPARTAMENTO">📂 Departamento</option>
+                        <option value="DIRECTIVO">👤 Directivo / Gerente</option>
+                        <option value="OTRO">🔹 Otro</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Ubicación (Plaza)</label>
+                    <select id="inp-plaza">
+                        <option value="">Seleccione...</option>
+                        </select>
+                </div>
+
+                <div class="full-width">
+                    <label>Nombre / Título</label>
+                    <input type="text" id="inp-titulo" placeholder="Ej. Sucursal Centro">
+                </div>
+
+                <div>
+                    <label>Correo</label>
+                    <input type="email" id="inp-correo">
+                </div>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <div>
+                        <label>Teléfono</label>
+                        <input type="text" id="inp-telefono">
+                    </div>
+                    <div>
+                        <label>Ext.</label>
+                        <input type="text" id="inp-ext">
+                    </div>
+                </div>
+
+                <div class="full-width">
+                    <label>Dirección Escrita</label>
+                    <input type="text" id="inp-direccion" placeholder="Calle, Número, Colonia...">
+                </div>
+                <div class="full-width">
+                    <label>Google Maps (Link o Embed/Iframe)</label>
+                    <input type="text" id="inp-maps" placeholder="Pega aquí el enlace o el código <iframe...>">
+                    <small style="color: var(--text-sec); display:block; margin-top:4px;">
+                        Acepta enlaces cortos (https://maps...) o código HTML embebido.
+                    </small>
+                </div>
+
+                <div class="full-width">
+                    <label>Descripción</label>
+                    <textarea id="inp-desc" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                <button class="btn-secondary" onclick="cancelarForm()">Cancelar</button>
+                <button class="btn-primary" onclick="guardarContacto()">
+                    <i class="ph-bold ph-floppy-disk"></i> <span id="btn-save-text">Guardar</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    (function() {
+        const estados = [
+            {n:"AGUASCALIENTES",a:"AGU"}, {n:"BAJA CALIFORNIA",a:"BC"}, {n:"BAJA CALIFORNIA SUR",a:"BCS"},
+            {n:"CAMPECHE",a:"CAMP"}, {n:"COAHUILA",a:"COAH"}, {n:"COLIMA",a:"COL"}, {n:"CHIAPAS",a:"CHIS"},
+            {n:"CHIHUAHUA",a:"CHIH"}, {n:"CIUDAD DE MEXICO",a:"CDMX"}, {n:"DISTRITO FEDERAL",a:"CDMX"},
+            {n:"DURANGO",a:"DGO"}, {n:"GUANAJUATO",a:"GTO"}, {n:"GUERRERO",a:"GRO"}, {n:"HIDALGO",a:"HGO"},
+            {n:"JALISCO",a:"JAL"}, {n:"MEXICO",a:"MEX"}, {n:"MICHOACAN",a:"MICH"}, {n:"MORELOS",a:"MOR"},
+            {n:"NAYARIT",a:"NAY"}, {n:"NUEVO LEON",a:"NL"}, {n:"OAXACA",a:"OAX"}, {n:"PUEBLA",a:"PUE"},
+            {n:"QUERETARO",a:"QRO"}, {n:"QUINTANA ROO",a:"QROO"}, {n:"SAN LUIS POTOSI",a:"SLP"},
+            {n:"SINALOA",a:"SIN"}, {n:"SONORA",a:"SON"}, {n:"TABASCO",a:"TAB"}, {n:"TAMAULIPAS",a:"TAM"},
+            {n:"TLAXCALA",a:"TLAX"}, {n:"VERACRUZ",a:"VER"}, {n:"YUCATAN",a:"YUC"}, {n:"ZACATECAS",a:"ZAC"}
+        ];
+
+        let contactosCache = [];
+        let contactoSeleccionado = null; // Guardamos el objeto entero
+        let idEdicion = null; // ID si estamos editando, null si es nuevo
+
+        async function initDirectorio() {
+            cargarSelectEstados();
+            await cargarContactos();
+        }
+
+        function cargarSelectEstados() {
+            const sel = document.getElementById('inp-plaza');
+            sel.innerHTML = '<option value="">Seleccione...</option>';
+            estados.forEach(est => {
+                const opt = document.createElement('option');
+                opt.value = est.a;
+                opt.text = est.n;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function cargarContactos() {
+            const lista = document.getElementById('lista-contactos');
+            try {
+                const { data, error } = await window.supabase
+                    .from('directorio')
+                    .select('*')
+                    .order('titulo_contacto', { ascending: true }); // Orden alfabético mejor
+
+                if (error) throw error;
+                contactosCache = data;
+                renderizarLista(contactosCache);
+            } catch (err) {
+                console.error(err);
+                lista.innerHTML = '<p style="text-align:center; color:var(--inb-red);">Error de carga.</p>';
+            }
+        }
+
+        window.renderizarLista = (datos) => {
+            const lista = document.getElementById('lista-contactos');
+            lista.innerHTML = '';
+            
+            if (datos.length === 0) {
+                lista.innerHTML = '<p style="text-align:center; padding:20px; color:#aaa;">Sin resultados.</p>';
+                return;
+            }
+
+            datos.forEach(c => {
+                const div = document.createElement('div');
+                div.className = `contact-item ${contactoSeleccionado && c.id === contactoSeleccionado.id ? 'active' : ''}`;
+                div.onclick = () => verDetalle(c);
+                
+                let icon = 'ph-building';
+                if(c.tipo === 'DIRECTIVO') icon = 'ph-user-tie';
+                if(c.tipo === 'DEPARTAMENTO') icon = 'ph-users-three';
+
+                div.innerHTML = `
+                    <div class="c-name"><i class="ph-bold ${icon}"></i> ${c.titulo_contacto || 'Sin Nombre'}</div>
+                    <div class="c-meta">
+                        <span>${c.plaza_nombre || c.plaza_codigo || ''}</span>
+                        <span class="tag-type">${c.tipo}</span>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        }
+
+        window.filtrarContactos = () => {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const filtrados = contactosCache.filter(c => 
+                (c.titulo_contacto && c.titulo_contacto.toLowerCase().includes(term)) ||
+                (c.plaza_nombre && c.plaza_nombre.toLowerCase().includes(term)) ||
+                (c.tipo && c.tipo.toLowerCase().includes(term))
+            );
+            renderizarLista(filtrados);
+        }
+
+        // --- VER DETALLE ---
+        window.verDetalle = (c) => {
+            contactoSeleccionado = c;
+            renderizarLista(contactosCache); // Para actualizar clase active
+            mostrarVista('view-detail');
+
+            // Textos básicos
+            document.getElementById('det-tipo').innerText = c.tipo;
+            document.getElementById('det-titulo').innerText = c.titulo_contacto;
+            
+            const estadoObj = estados.find(e => e.a === c.plaza_codigo) || {n: c.plaza_nombre};
+            document.getElementById('det-plaza').innerText = estadoObj.n || c.plaza_codigo || 'N/A';
+            
+            document.getElementById('det-correo').innerHTML = c.correo ? `<a href="mailto:${c.correo}">${c.correo}</a>` : '--';
+            
+            let telStr = c.telefono || '--';
+            if(c.extension) telStr += ` (Ext. ${c.extension})`;
+            document.getElementById('det-telefono').innerText = telStr;
+            
+            document.getElementById('det-direccion').innerText = c.direccion || 'Sin dirección registrada.';
+            document.getElementById('det-desc').innerText = c.descripcion || 'Sin descripción.';
+
+            // Lógica MAPAS
+            const mapArea = document.getElementById('map-area');
+            const mapLinkBtn = document.getElementById('map-link-btn');
+            const extLink = document.getElementById('btn-external-map');
+            
+            mapArea.innerHTML = '';
+            mapArea.classList.add('hidden');
+            mapLinkBtn.classList.add('hidden');
+
+            if (c.maps_link) {
+                // Caso 1: Es un iframe (EMBEBIDO)
+                if (c.maps_link.trim().startsWith('<iframe')) {
+                    mapArea.classList.remove('hidden');
+                    mapArea.innerHTML = `<div class="map-container">${c.maps_link}</div>`;
+                } 
+                // Caso 2: Es un enlace normal (LINK)
+                else {
+                    mapLinkBtn.classList.remove('hidden');
+                    extLink.href = c.maps_link;
+                }
+            }
+        }
+
+        // --- PREPARAR FORMULARIO (NUEVO O EDITAR) ---
+        window.nuevoContacto = () => {
+            idEdicion = null; // Modo Crear
+            document.getElementById('form-header-title').innerHTML = '<i class="ph-bold ph-plus"></i> Nuevo Contacto';
+            document.getElementById('btn-save-text').innerText = 'Guardar';
+            
+            // Limpiar campos
+            document.getElementById('inp-tipo').value = 'PLAZA';
+            document.getElementById('inp-plaza').value = '';
+            document.getElementById('inp-titulo').value = '';
+            document.getElementById('inp-correo').value = '';
+            document.getElementById('inp-telefono').value = '';
+            document.getElementById('inp-ext').value = '';
+            document.getElementById('inp-direccion').value = '';
+            document.getElementById('inp-maps').value = '';
+            document.getElementById('inp-desc').value = '';
+
+            mostrarVista('view-form');
+        }
+
+        window.editarContactoActual = () => {
+            if(!contactoSeleccionado) return;
+            idEdicion = contactoSeleccionado.id; // Modo Editar
+
+            document.getElementById('form-header-title').innerHTML = '<i class="ph-bold ph-pencil-simple"></i> Editar Contacto';
+            document.getElementById('btn-save-text').innerText = 'Actualizar';
+
+            // Rellenar campos
+            const c = contactoSeleccionado;
+            document.getElementById('inp-tipo').value = c.tipo;
+            document.getElementById('inp-plaza').value = c.plaza_codigo || '';
+            document.getElementById('inp-titulo').value = c.titulo_contacto || '';
+            document.getElementById('inp-correo').value = c.correo || '';
+            document.getElementById('inp-telefono').value = c.telefono || '';
+            document.getElementById('inp-ext').value = c.extension || '';
+            document.getElementById('inp-direccion').value = c.direccion || '';
+            document.getElementById('inp-maps').value = c.maps_link || ''; // Muestra el código tal cual (link o iframe)
+            document.getElementById('inp-desc').value = c.descripcion || '';
+
+            mostrarVista('view-form');
+        }
+
+        // --- GUARDAR (INSERT OR UPDATE) ---
+        window.guardarContacto = async () => {
+            const btn = document.querySelector('.btn-primary');
+            const originalText = document.getElementById('btn-save-text').innerText;
+            btn.disabled = true; document.getElementById('btn-save-text').innerText = 'Procesando...';
+
+            // Recolectar datos
+            const dataToSave = {
+                tipo: document.getElementById('inp-tipo').value,
+                plaza_codigo: document.getElementById('inp-plaza').value,
+                titulo_contacto: document.getElementById('inp-titulo').value,
+                correo: document.getElementById('inp-correo').value,
+                telefono: document.getElementById('inp-telefono').value,
+                extension: document.getElementById('inp-ext').value,
+                direccion: document.getElementById('inp-direccion').value,
+                maps_link: document.getElementById('inp-maps').value,
+                descripcion: document.getElementById('inp-desc').value
+            };
+
+            // Nombre del estado
+            const estadoObj = estados.find(e => e.a === dataToSave.plaza_codigo);
+            dataToSave.plaza_nombre = estadoObj ? estadoObj.n : '';
+
+            if(!dataToSave.titulo_contacto) {
+                alert("El nombre es obligatorio.");
+                btn.disabled = false; document.getElementById('btn-save-text').innerText = originalText;
+                return;
+            }
+
+            try {
+                let error = null;
+
+                if (idEdicion) {
+                    // UPDATE
+                    const res = await window.supabase
+                        .from('directorio')
+                        .update(dataToSave)
+                        .eq('id', idEdicion);
+                    error = res.error;
+                } else {
+                    // INSERT
+                    const res = await window.supabase
+                        .from('directorio')
+                        .insert([dataToSave]);
+                    error = res.error;
+                }
+
+                if(error) throw error;
+
+                // Éxito
+                await cargarContactos();
+                
+                // Si editamos, volver al detalle actualizado, si es nuevo ir a vacío
+                if(idEdicion) {
+                    // Buscar el contacto actualizado en caché para mostrarlo
+                    const updated = contactosCache.find(c => c.id === idEdicion);
+                    if(updated) verDetalle(updated);
+                    else mostrarVista('view-empty');
+                } else {
+                    mostrarVista('view-empty');
+                }
+                
+                alert(idEdicion ? "Contacto actualizado." : "Contacto creado.");
+
+            } catch(e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false; document.getElementById('btn-save-text').innerText = originalText;
+            }
+        }
+
+        window.eliminarContacto = async () => {
+            if(!contactoSeleccionado) return;
+            if(!confirm("¿Eliminar definitivamente?")) return;
+
+            try {
+                const { error } = await window.supabase.from('directorio').delete().eq('id', contactoSeleccionado.id);
+                if(error) throw error;
+                
+                contactoSeleccionado = null;
+                await cargarContactos();
+                mostrarVista('view-empty');
+            } catch(e) {
+                alert(e.message);
+            }
+        }
+
+        window.cancelarForm = () => {
+            if (contactoSeleccionado) verDetalle(contactoSeleccionado);
+            else mostrarVista('view-empty');
+        }
+
+        function mostrarVista(id) {
+            ['view-empty', 'view-detail', 'view-form'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        initDirectorio();
+    })();
+</script>

@@ -1,0 +1,734 @@
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+<style>
+    /* --- ESTÉTICA PREMIUM V22 (Dark Glass) --- */
+    .agenda-wrapper {
+        margin: -40px;
+        height: 100vh;
+        background: radial-gradient(circle at top right, #1e293b, #0f172a); 
+        color: #e2e8f0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Inter', sans-serif;
+
+        /* Variables */
+        --glass-panel: rgba(30, 41, 59, 0.65);
+        --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        --text-muted: #94a3b8;
+    }
+
+    /* KANBAN */
+    .kanban-container { 
+        flex: 1; display: flex; padding: 1.5rem; gap: 1.2rem; 
+        overflow-x: auto; padding-top: 2rem; align-items: flex-start;
+    }
+
+    .kanban-col {
+        background: var(--glass-panel); backdrop-filter: blur(12px);
+        min-width: 340px; width: 340px;
+        border-radius: 16px; border: var(--glass-border);
+        display: flex; flex-direction: column; max-height: 98%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .col-header {
+        padding: 1rem 1.2rem; border-bottom: var(--glass-border); 
+        font-weight: 700; display: flex; justify-content: space-between; align-items: center;
+        background: rgba(255,255,255,0.02); border-radius: 16px 16px 0 0;
+        height: 55px; color: white; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .count-badge {
+        padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; color: white; margin-left: 6px; font-weight: 800;
+    }
+
+    .btn-add-task {
+        background: var(--primary-gradient); color: white; border: none;
+        width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+        transition: transform 0.2s;
+    }
+    .btn-add-task:hover { transform: scale(1.1) rotate(90deg); }
+
+    .task-list { 
+        flex: 1; padding: 1rem; overflow-y: auto; min-height: 100px;
+        scrollbar-width: thin; scrollbar-color: #475569 transparent;
+    }
+    .task-list.drag-over { background: rgba(59, 130, 246, 0.05); }
+
+    /* --- TARJETA VISUAL --- */
+    .card {
+        background: #1e293b; border-radius: 12px; 
+        border: 1px solid rgba(255,255,255,0.05);
+        margin-bottom: 1rem; cursor: grab; padding: 1rem;
+        display: flex; flex-direction: column; gap: 6px;
+        transition: all 0.2s; position: relative;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 4px solid transparent;
+        overflow: hidden;
+    }
+    .card:hover { transform: translateY(-3px); background: #243042; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    .card.dragging { opacity: 0.5; border: 2px dashed #3b82f6; }
+
+    .card[data-priority="ALTA"] { border-left-color: #ef4444; }
+    .card[data-priority="MEDIA"] { border-left-color: #f59e0b; }
+    .card[data-priority="BAJA"] { border-left-color: #10b981; }
+
+    .card-title { font-size: 0.95rem; font-weight: 600; color: #f8fafc; line-height: 1.4; }
+    .card-desc { font-size: 0.8rem; color: #94a3b8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    
+    .card-meta { display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem; color: #64748b; margin-top: 5px; }
+    .meta-row { display: flex; justify-content: space-between; }
+    .meta-row span.val { color: #cbd5e1; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .card-footer { 
+        margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); 
+        display: flex; justify-content: space-between; align-items: center; 
+    }
+    
+    .priority-pill { font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+    .bg-alta { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+    .bg-media { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+    .bg-baja { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+
+    /* Botones Acción en Tarjeta */
+    .card-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-quick {
+        width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 1rem;
+        transition: 0.2s; background: rgba(255,255,255,0.05); color: #94a3b8;
+    }
+    .btn-quick:hover { background: white; transform: translateY(-2px); }
+    .btn-quick.wa:hover { color: #25D366; }
+    .btn-quick.mail:hover { color: #ea4335; }
+    
+    .icon-seen { color: #334155; margin-left: 5px; }
+    .icon-seen.active { color: #3b82f6; filter: drop-shadow(0 0 5px rgba(59,130,246,0.6)); }
+
+    /* --- MODAL MODERNO (SPLIT VIEW) --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(6px);
+        display: none; justify-content: center; align-items: center; z-index: 2000;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; }
+
+    .modal-box {
+        background: #1e293b; width: 850px; /* Más ancho para split view */
+        padding: 0; border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.1); max-height: 90vh; overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.9);
+        transform: scale(0.98); transition: transform 0.2s;
+        display: flex; flex-direction: column;
+    }
+    .modal-overlay.open .modal-box { transform: scale(1); }
+
+    .modal-header {
+        padding: 1.5rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.05);
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(255,255,255,0.02);
+    }
+    .modal-body {
+        display: grid; grid-template-columns: 1.2fr 0.8fr; /* Split 60/40 */
+        overflow-y: auto;
+    }
+    .modal-left { padding: 2rem; border-right: 1px solid rgba(255,255,255,0.05); }
+    .modal-right { padding: 2rem; background: rgba(0,0,0,0.15); }
+
+    /* Inputs */
+    .form-group { margin-bottom: 1.2rem; }
+    .lbl { color:#64748b; font-size:0.7rem; display:block; margin-bottom:6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .form-control { 
+        width: 100%; background: #0f172a; border: 1px solid #334155; 
+        color: white; padding: 12px; border-radius: 8px; font-family: inherit; font-size: 0.9rem;
+    }
+    .form-control:disabled { opacity: 0.7; background: #162032; border-style: dashed; cursor: not-allowed; }
+    .form-control:focus { border-color: #3b82f6; outline: none; background: #111827; }
+
+    /* Inputs con Icono (Contacto) */
+    .input-icon-group { position: relative; }
+    .input-icon-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 1.1rem; }
+    .input-icon-group input { padding-left: 40px; }
+
+    /* Área Archivos */
+    .file-area { margin-top: 5px; }
+    
+    /* Estado: Subir */
+    .upload-zone {
+        border: 2px dashed #334155; border-radius: 10px; padding: 20px;
+        text-align: center; color: #64748b; cursor: pointer; transition: 0.2s;
+        background: rgba(255,255,255,0.02);
+    }
+    .upload-zone:hover { border-color: #3b82f6; color: #3b82f6; background: rgba(59,130,246,0.05); }
+    
+    /* Estado: Archivo Existente */
+    .file-card {
+        background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);
+        padding: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .file-info { display: flex; align-items: center; gap: 10px; color: #93c5fd; font-size: 0.9rem; font-weight: 500; }
+    .file-btn { color: white; background: #3b82f6; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 700; }
+
+    /* Multi-Select */
+    .multi-select-trigger {
+        background: #0f172a; border: 1px solid #334155; color: #94a3b8;
+        padding: 10px; border-radius: 8px; cursor: pointer; min-height: 42px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 0.85rem;
+    }
+    .multi-select-trigger.disabled { opacity: 0.7; pointer-events: none; }
+    .role-tag { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
+    
+    .multi-dropdown {
+        position: absolute; background: #1e293b; border: 1px solid #334155; width: 100%; z-index: 100;
+        max-height: 200px; overflow-y: auto; display: none; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+    .multi-dropdown.open { display: block; }
+    .multi-opt { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; gap: 10px; align-items: center; color: #cbd5e1; font-size: 0.85rem;}
+    .multi-opt:hover { background: #334155; }
+
+    /* Toggle Switch */
+    .toggle-wrapper { display: flex; align-items: center; gap: 10px; }
+    .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .4s; border-radius: 20px; }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #3b82f6; }
+    input:checked + .slider:before { transform: translateX(16px); }
+
+    /* Footer Buttons */
+    .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; gap: 10px; background: rgba(0,0,0,0.2); }
+    .btn-act { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; transition: 0.2s; }
+    .btn-close { background: transparent; border: 1px solid #475569; color: #94a3b8; }
+    .btn-save { background: var(--primary-gradient); color: white; }
+    .btn-del { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+</style>
+
+<div class="agenda-wrapper">
+    <div class="kanban-container">
+        <div class="kanban-col">
+            <div class="col-header" style="border-bottom: 3px solid #f59e0b;">
+                <div>PENDIENTES <span id="count-pending" class="count-badge" style="background:#f59e0b;">0</span></div>
+                <button class="btn-add-task" onclick="openModalForNew()"><i class="ph-bold ph-plus"></i></button>
+            </div>
+            <div id="pending" class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"></div>
+        </div>
+        <div class="kanban-col">
+            <div class="col-header" style="border-bottom: 3px solid #3b82f6;">
+                <div>EN PROCESO <span id="count-in_progress" class="count-badge" style="background:#3b82f6;">0</span></div>
+            </div>
+            <div id="in_progress" class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"></div>
+        </div>
+        <div class="kanban-col">
+            <div class="col-header" style="border-bottom: 3px solid #10b981;">
+                <div>COMPLETADO <span id="count-done" class="count-badge" style="background:#10b981;">0</span></div>
+            </div>
+            <div id="done" class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"></div>
+        </div>
+    </div>
+</div>
+
+<div id="taskModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 style="color:white; margin:0; font-size: 1.2rem;" id="modalTitle">Detalles</h2>
+            <button onclick="closeModal()" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:1.5rem;"><i class="ph ph-x"></i></button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="modal-left">
+                <input type="hidden" id="taskId">
+                <input type="hidden" id="currentStatus">
+
+                <div class="form-group">
+                    <label class="lbl">TÍTULO</label>
+                    <input type="text" id="taskTitle" class="form-control" placeholder="Ej. Revisión Mensual">
+                </div>
+
+                <div class="form-group">
+                    <label class="lbl">DESCRIPCIÓN</label>
+                    <textarea id="taskDesc" class="form-control" rows="5" placeholder="Detalles..."></textarea>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label class="lbl">PRIORIDAD</label>
+                        <select id="taskPriority" class="form-control">
+                            <option value="BAJA">BAJA</option>
+                            <option value="MEDIA">MEDIA</option>
+                            <option value="ALTA">ALTA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="lbl">VENCIMIENTO</label>
+                        <div class="toggle-wrapper" style="margin-top:5px; margin-bottom:5px;">
+                            <label class="switch">
+                                <input type="checkbox" id="checkDeadline" onchange="toggleDateInput()">
+                                <span class="slider"></span>
+                            </label>
+                            <span id="dateStatusLabel" style="font-size:0.75rem; color:#64748b;">No</span>
+                        </div>
+                        <input type="datetime-local" id="taskDate" class="form-control" style="display:none;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-right">
+                <div class="form-group">
+                    <label class="lbl">DE (ASIGNADO POR)</label>
+                    <select id="assignedBy" class="form-control"><option>...</option></select>
+                </div>
+
+                <div class="form-group">
+                    <label class="lbl">PARA (ASIGNADO A)</label>
+                    <div style="position:relative;">
+                        <div id="multiSelectTrigger" class="multi-select-trigger" onclick="toggleMultiDropdown()">Seleccionar...</div>
+                        <div id="multiDropdown" class="multi-dropdown"></div>
+                    </div>
+                </div>
+
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+
+                <div class="form-group">
+                    <label class="lbl">ARCHIVOS / EVIDENCIA</label>
+                    <div class="toggle-wrapper" style="margin-bottom:8px;">
+                        <label class="switch">
+                            <input type="checkbox" id="checkUpload" onchange="toggleUploadInput()">
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-size:0.75rem; color:#64748b;">Habilitar Carga</span>
+                    </div>
+
+                    <div id="fileArea" class="file-area">
+                        </div>
+                    <input type="file" id="taskFile" style="display:none;">
+                </div>
+
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+
+                <div class="form-group">
+                    <label class="lbl">CONTACTO PARA NOTIFICAR</label>
+                    <div class="input-icon-group" style="margin-bottom:10px;">
+                        <i class="ph-bold ph-whatsapp-logo"></i>
+                        <input type="text" id="notifyPhone" class="form-control" value="4981097058">
+                    </div>
+                    <div class="input-icon-group">
+                        <i class="ph-bold ph-envelope-simple"></i>
+                        <input type="text" id="notifyEmail" class="form-control" value="franciscopuga.galher@gmail.com">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-act btn-del" id="btnDelete" onclick="deleteTask()" style="display:none;">Eliminar</button>
+            <div style="flex:1;"></div>
+            <button class="btn-act btn-close" onclick="closeModal()">Cerrar</button>
+            <button class="btn-act btn-save" id="btnEdit" onclick="enableEditMode()">Editar</button>
+            <button class="btn-act btn-save" id="btnSave" onclick="saveTask()" style="display:none;">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const supabase = window.supabase;
+        const sessionRaw = localStorage.getItem('galher_session_v2');
+        const session = sessionRaw ? JSON.parse(sessionRaw) : { rol: 'INVITADO', nombre: 'Anon' };
+        
+        const SUPER_ROLES = ['ADMINISTRADOR', 'DIRECCION'];
+        const isSuperUser = SUPER_ROLES.includes(session.rol);
+
+        // EmailJS
+        const EMAILJS_SERVICE_ID = "service_914jejr";
+        const EMAILJS_TEMPLATE_ID = "template_d806rid";
+        try { emailjs.init("lFv-XpbSgNq_1BkhO"); } catch(e) {}
+
+        async function initModule() {
+            await loadRoles();
+            await fetchTasks();
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#multiSelectTrigger') && !e.target.closest('#multiDropdown')) {
+                    document.getElementById('multiDropdown').classList.remove('open');
+                }
+            });
+        }
+        initModule();
+
+        async function loadRoles() {
+            const { data } = await supabase.from('roles_sistema').select('nombre');
+            const selBy = document.getElementById('assignedBy');
+            const multiDropdown = document.getElementById('multiDropdown');
+            selBy.innerHTML = '<option value="">--</option>';
+            multiDropdown.innerHTML = ''; 
+
+            if(data) {
+                data.forEach(r => {
+                    selBy.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+                    const div = document.createElement('div');
+                    div.className = 'multi-opt';
+                    div.innerHTML = `<input type="checkbox" class="role-cb" value="${r.nombre}"><span>${r.nombre}</span>`;
+                    div.onclick = (e) => {
+                        if(e.target.tagName !== 'INPUT') {
+                            const cb = div.querySelector('input'); cb.checked = !cb.checked; 
+                        }
+                        updateMultiDisplay();
+                    };
+                    div.querySelector('input').onchange = updateMultiDisplay;
+                    multiDropdown.appendChild(div);
+                });
+            }
+        }
+
+        window.toggleMultiDropdown = () => {
+            if(!document.getElementById('multiSelectTrigger').classList.contains('disabled'))
+                document.getElementById('multiDropdown').classList.toggle('open');
+        }
+
+        window.updateMultiDisplay = () => {
+            const cbs = document.querySelectorAll('.role-cb:checked');
+            const trig = document.getElementById('multiSelectTrigger');
+            if(cbs.length === 0) { trig.innerHTML = 'Seleccionar...'; trig.style.color = '#94a3b8'; }
+            else {
+                trig.innerHTML = '';
+                cbs.forEach(cb => {
+                    trig.innerHTML += `<span class="role-tag">${cb.value}</span>`;
+                });
+            }
+        }
+
+        function getRoles() { return Array.from(document.querySelectorAll('.role-cb:checked')).map(c => c.value); }
+        function setRoles(arr) {
+            document.querySelectorAll('.role-cb').forEach(c => c.checked = false);
+            if(arr) {
+                const list = Array.isArray(arr) ? arr : [arr];
+                list.forEach(r => { const c = document.querySelector(`.role-cb[value="${r}"]`); if(c) c.checked=true; });
+            }
+            updateMultiDisplay();
+        }
+
+        async function fetchTasks() {
+            const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+            if(data) {
+                const visible = data.filter(t => {
+                    if (isSuperUser) return true;
+                    let r = []; try{r=JSON.parse(t.assigned_to);}catch(e){r=[t.assigned_to];}
+                    if(!Array.isArray(r)) r=[t.assigned_to];
+                    return r.includes(session.rol) || t.creator === session.rol;
+                });
+                renderBoard(visible);
+            }
+        }
+
+        function renderBoard(tasks) {
+            ['pending','in_progress','done'].forEach(id => {
+                document.getElementById(id).innerHTML='';
+                document.getElementById('count-'+id).innerText='0';
+            });
+            const c = {pending:0, in_progress:0, done:0};
+            tasks.forEach(t => {
+                let s = t.status||'pending'; if(!c.hasOwnProperty(s)) s='pending';
+                createCard(t, document.getElementById(s)); c[s]++;
+            });
+            Object.keys(c).forEach(k => document.getElementById('count-'+k).innerText = c[k]);
+        }
+
+        function createCard(task, container) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.priority = task.urgency;
+            card.draggable = true; card.id = task.id; card.ondragstart = drag;
+            
+            card.onclick = (e) => {
+                if(e.target.closest('button')) return;
+                openModalView(task);
+            };
+
+            let roles = '...';
+            try{ let r=JSON.parse(task.assigned_to); roles = Array.isArray(r) ? r.join(', ') : r; }catch(e){ roles=task.assigned_to; }
+            if(roles.length>20) roles = roles.substring(0,20)+'...';
+            
+            const date = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'S/F';
+            const seen = task.is_read ? 'active' : '';
+
+            card.innerHTML = `
+                <div class="card-title">${task.title}</div>
+                <div class="card-desc">${task.description||''}</div>
+                <div class="card-meta">
+                    <div class="meta-row"><span class="label">DE:</span> <span class="val">${task.creator||'SIS'}</span></div>
+                    <div class="meta-row"><span class="label">PARA:</span> <span class="val" title="${roles}">${roles}</span></div>
+                    <div class="meta-row"><span class="label">VENCE:</span> <span class="val">${date}</span></div>
+                </div>
+                <div class="card-footer">
+                    <span class="priority-pill bg-${task.urgency.toLowerCase()}">${task.urgency}</span>
+                    <div class="card-actions">
+                        <i class="ph-fill ph-eye icon-seen ${seen}"></i>
+                        <button class="btn-quick wa" onclick="quickWa(this, '${task.title}', '${task.description}')"><i class="ph-bold ph-whatsapp-logo"></i></button>
+                        <button class="btn-quick mail" onclick="quickMail(this, '${task.title}', '${task.description}')"><i class="ph-bold ph-envelope-simple"></i></button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        // --- NOTIFICACIONES ---
+        // Extraer la logica de notificación para reusar
+        function getNotifyData() {
+            let p = document.getElementById('notifyPhone').value.replace(/\D/g,'');
+            if(p.length===10) p='52'+p;
+            let e = document.getElementById('notifyEmail').value;
+            // Si llamamos desde el botón de la tarjeta, usamos los valores de la tarjeta
+            // pero como no los tenemos a mano facil, usamos los del modal que estaran ocultos
+            // O mejor: pasamos los datos en el onclick.
+            return {p, e}; 
+        }
+
+        window.quickWa = (btn, t, d) => {
+            // Usamos defaults si no se abre el modal, o prompt?
+            // Para simplificar, usaremos los defaults fijos ya que los botones están fuera del modal
+            // Ojo: Los inputs están dentro del modal. Si no se ha abierto el modal, tienen los defaults.
+            let p = '524981097058'; 
+            let dateVal = "No definida"; 
+            let prio = "N/A";
+            
+            // Texto Formateado
+            let txt = `👋 *HOLA, EQUIPO GALHER*%0A%0A🚀 *NUEVA TAREA ASIGNADA*%0A%0A📌 *TÍTULO:* ${t}%0A📝 *DESCRIPCIÓN:* ${d}%0A%0A👉 *Favor de revisar en el portal.*`;
+            window.open(`https://wa.me/${p}?text=${txt}`, '_blank');
+        }
+
+        window.quickMail = (btn, t, d) => {
+            let e = 'franciscopuga.galher@gmail.com';
+            let s = `🔔 NUEVA TAREA ASIGNADA: ${t}`;
+            let b = `ESTIMADO COLABORADOR,\n\nSe le ha asignado una nueva actividad.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📋 DETALLES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🔹 TÍTULO: ${t}\n🔹 DESCRIPCIÓN: ${d}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ Favor de ingresar al portal.\n\nAtentamente,\nAdministración Galher`;
+            let url = `https://mail.google.com/mail/?view=cm&fs=1&to=${e}&su=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`;
+            window.open(url, '_blank');
+        }
+
+        // --- MODAL ---
+        window.openModalForNew = () => {
+            resetModal();
+            document.getElementById('modalTitle').innerText = "Nueva Tarea";
+            setDisabled(false);
+            
+            document.getElementById('assignedBy').value = session.rol || '';
+            document.getElementById('assignedBy').disabled = true; 
+
+            document.getElementById('btnEdit').style.display='none';
+            document.getElementById('btnSave').style.display='block';
+            
+            showModal();
+        }
+
+        window.openModalView = async (task) => {
+            resetModal();
+            if(!task.is_read) {
+                await supabase.from('tasks').update({ is_read: true }).eq('id', task.id);
+                fetchTasks();
+            }
+
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDesc').value = task.description||'';
+            document.getElementById('taskPriority').value = task.urgency||'MEDIA';
+            document.getElementById('assignedBy').value = task.creator||'';
+            try{ setRoles(JSON.parse(task.assigned_to)); }catch(e){ setRoles([task.assigned_to]); }
+
+            if(task.due_date) {
+                document.getElementById('checkDeadline').checked=true;
+                document.getElementById('taskDate').style.display='block';
+                document.getElementById('taskDate').value = task.due_date.slice(0,16);
+            }
+
+            renderFileArea(task.attachment_name, task.attachment_url);
+
+            document.getElementById('modalTitle').innerText = "Detalles";
+            setDisabled(true); 
+            document.getElementById('notifyPhone').disabled=false;
+            document.getElementById('notifyEmail').disabled=false;
+
+            const isCreator = (task.creator === session.rol);
+            const canEdit = isCreator || isSuperUser;
+            
+            document.getElementById('btnEdit').style.display = canEdit ? 'block' : 'none';
+            document.getElementById('btnSave').style.display = 'none';
+            document.getElementById('btnDelete').style.display = (task.status==='done' && isSuperUser) ? 'block' : 'none';
+
+            showModal();
+        }
+
+        function renderFileArea(name, url) {
+            const area = document.getElementById('fileArea');
+            if (url) {
+                area.innerHTML = `
+                    <div class="file-card">
+                        <div class="file-info"><i class="ph-bold ph-file-pdf"></i> ${name || 'Adjunto'}</div>
+                        <a href="${url}" target="_blank" class="file-btn">Ver / Descargar</a>
+                    </div>`;
+                document.getElementById('checkUpload').checked = false; 
+            } else {
+                area.innerHTML = `
+                    <div class="upload-zone" onclick="document.getElementById('taskFile').click()">
+                        <i class="ph-bold ph-upload-simple"></i><br>
+                        <span id="uploadText">Clic para subir archivo</span>
+                    </div>`;
+            }
+        }
+
+        window.enableEditMode = () => {
+            const creator = document.getElementById('assignedBy').value;
+            setDisabled(false);
+            
+            if (creator !== session.rol && !isSuperUser) {
+                document.getElementById('assignedBy').disabled = true;
+                document.getElementById('multiSelectTrigger').classList.add('disabled');
+            }
+
+            document.getElementById('btnEdit').style.display='none';
+            document.getElementById('btnSave').style.display='block';
+        }
+
+        function setDisabled(d) {
+            document.querySelectorAll('.form-control, .switch input, .role-cb').forEach(el => {
+                if(!['taskFile','notifyPhone','notifyEmail'].includes(el.id)) el.disabled = d;
+            });
+            const trig = document.getElementById('multiSelectTrigger');
+            d ? trig.classList.add('disabled') : trig.classList.remove('disabled');
+        }
+
+        function resetModal() {
+            document.getElementById('taskId').value='';
+            document.getElementById('taskTitle').value='';
+            document.getElementById('taskDesc').value='';
+            document.getElementById('taskPriority').value='MEDIA';
+            document.getElementById('assignedBy').value='';
+            setRoles([]);
+            document.getElementById('checkDeadline').checked=false;
+            document.getElementById('taskDate').style.display='none';
+            document.getElementById('taskDate').value='';
+            document.getElementById('checkUpload').checked=false;
+            document.getElementById('taskFile').style.display='none';
+            document.getElementById('taskFile').value='';
+            document.getElementById('btnDelete').style.display='none';
+            renderFileArea(null, null);
+        }
+
+        window.toggleDateInput = () => {
+            document.getElementById('taskDate').style.display = document.getElementById('checkDeadline').checked ? 'block' : 'none';
+        }
+        window.toggleUploadInput = () => {
+            const chk = document.getElementById('checkUpload');
+            const area = document.getElementById('fileArea');
+            if(chk.checked) {
+                area.innerHTML = `
+                    <div class="upload-zone" onclick="document.getElementById('taskFile').click()">
+                        <i class="ph-bold ph-upload-simple"></i><br>
+                        <span id="uploadText">Clic para subir nuevo archivo</span>
+                    </div>`;
+                document.getElementById('taskFile').style.display = 'block'; 
+            } else {
+                renderFileArea(null, null); 
+            }
+        }
+        document.getElementById('taskFile').addEventListener('change', function() {
+            if(this.files[0]) document.getElementById('uploadText').innerText = this.files[0].name;
+        });
+
+        function showModal() {
+            document.getElementById('taskModal').classList.add('open');
+            document.getElementById('taskModal').style.display='flex';
+        }
+        window.closeModal = () => {
+            document.getElementById('taskModal').classList.remove('open');
+            setTimeout(() => document.getElementById('taskModal').style.display='none', 200);
+        }
+
+        window.saveTask = async () => {
+            const id = document.getElementById('taskId').value;
+            const title = document.getElementById('taskTitle').value;
+            if(!title) return alert("Falta título");
+
+            const roles = getRoles();
+            if(roles.length === 0) return alert("Falta destinatario");
+
+            const payload = {
+                title: title, description: document.getElementById('taskDesc').value,
+                urgency: document.getElementById('taskPriority').value,
+                creator: document.getElementById('assignedBy').value,
+                assigned_to: JSON.stringify(roles),
+                due_date: document.getElementById('checkDeadline').checked ? document.getElementById('taskDate').value : null
+            };
+
+            if(document.getElementById('checkUpload').checked) {
+                const file = document.getElementById('taskFile').files[0];
+                if(file) {
+                    const name = `${Date.now()}_${file.name}`;
+                    const { error } = await supabase.storage.from('adjuntos').upload(name, file);
+                    if(!error) {
+                        const { data } = supabase.storage.from('adjuntos').getPublicUrl(name);
+                        payload.attachment_name = file.name; payload.attachment_url = data.publicUrl;
+                    }
+                }
+            }
+
+            if(id) {
+                await supabase.from('tasks').update(payload).eq('id', id);
+            } else {
+                payload.status = 'pending'; payload.is_read = false;
+                const { error } = await supabase.from('tasks').insert([payload]);
+                if(!error) sendAutomaticEmail(payload);
+            }
+            closeModal(); fetchTasks();
+        }
+
+        window.deleteTask = async () => {
+            if(confirm("¿Borrar definitivamente?")) {
+                await supabase.from('tasks').delete().eq('id', document.getElementById('taskId').value);
+                closeModal(); fetchTasks();
+            }
+        }
+
+        async function sendAutomaticEmail(task) {
+            let arr=[]; try{arr=JSON.parse(task.assigned_to)}catch(e){arr=[task.assigned_to]}
+            if(!arr.some(r => ['ADMINISTRACION','DIRECCION'].includes(r))) return;
+            
+            // Adjunto texto
+            let fileText = task.attachment_url ? "Sí (Ver en portal)" : "No adjuntos";
+            let dateText = task.due_date ? new Date(task.due_date).toLocaleDateString() : "No definida";
+
+            const params = {
+                task_title: task.title,
+                task_desc: task.description,
+                assigned_by: task.creator,
+                assigned_to: arr.join(', '),
+                urgency: task.urgency,
+                due_date: dateText,
+                attachments_html: fileText, // Reusamos campo para texto simple en este template
+                count_pending: document.getElementById('count-pending').innerText,
+                count_progress: document.getElementById('count-in_progress').innerText,
+                count_done: document.getElementById('count-done').innerText
+            };
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+        }
+
+        // Drag & Drop
+        window.allowDrop = (ev) => { ev.preventDefault(); ev.target.closest('.task-list')?.classList.add('drag-over'); }
+        window.leaveDrop = (ev) => { ev.target.closest('.task-list')?.classList.remove('drag-over'); }
+        window.drag = (ev) => { ev.dataTransfer.setData("text", ev.target.id); ev.target.classList.add('dragging'); }
+        window.drop = async (ev) => {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("text");
+            const el = document.getElementById(id);
+            let target = ev.target;
+            while(target && !target.classList.contains('task-list')) target = target.parentElement;
+            document.querySelectorAll('.task-list').forEach(l => l.classList.remove('drag-over'));
+            if(el) el.classList.remove('dragging');
+            if(target) {
+                target.appendChild(el);
+                await supabase.from('tasks').update({ status: target.id }).eq('id', id);
+                fetchTasks();
+            }
+        }
+    })();
+</script>

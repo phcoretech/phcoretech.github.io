@@ -1,0 +1,366 @@
+<style>
+    /* --- VARIABLES --- */
+    :root {
+        --inb-navy: #003366;       
+        --inb-blue-soft: #005DAA;  
+        --white: #FFFFFF;          
+        --bg-light: #F8FAFC;       
+        --border: #E2E8F0;         
+        --text-main: #1e293b;      
+        --text-sec: #64748b;       
+        --radius-card: 16px;
+        --radius-input: 8px;
+        --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; outline: none; font-family: 'Inter', sans-serif; }
+
+    /* BODY: Aseguramos que no estorbe */
+    body { margin: 0; padding: 0; width: 100%; overflow: hidden; }
+
+    /* LAYOUT PRINCIPAL */
+    .bday-layout {
+        display: flex;
+        flex-direction: column;
+        /* TRUCO: Usamos 90vh para asegurar que quepa en la pantalla del usuario
+           menos el header del padre. Esto evita el colapso. */
+        height: 88vh; 
+        width: 100%;
+        gap: 20px;
+        padding: 5px; /* Un poco de aire */
+    }
+
+    /* HEADER: FIJO */
+    .bday-header {
+        background: var(--white);
+        border-radius: var(--radius-card);
+        padding: 20px 30px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0; /* No se encoge */
+        min-height: 80px;
+    }
+    .header-titles h2 { margin: 0; color: var(--inb-navy); font-weight: 800; font-size: 1.5rem; }
+    .header-titles p { margin: 5px 0 0 0; color: var(--text-sec); font-size: 0.9rem; }
+
+    /* CONTENEDOR DE SCROLL (EL QUE TENDRÁ LA BARRA) */
+    .months-wrapper {
+        flex: 1; /* Ocupa el resto de la altura */
+        position: relative;
+        overflow: hidden; /* Contiene el scroll interno */
+        border-radius: var(--radius-card);
+    }
+
+    .months-container {
+        /* Forzamos el scroll aquí */
+        height: 100%; 
+        overflow-y: scroll; /* Scroll siempre visible */
+        padding-right: 10px;
+        padding-bottom: 50px; /* Espacio extra al final */
+        
+        /* Masonry */
+        column-count: 4; 
+        column-gap: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1500px) { .months-container { column-count: 3; } }
+    @media (max-width: 1100px) { .months-container { column-count: 2; } }
+    @media (max-width: 700px) { .months-container { column-count: 1; } }
+
+    /* TARJETAS */
+    .month-card {
+        background: var(--white);
+        border-radius: var(--radius-card);
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        margin-bottom: 20px; 
+        break-inside: avoid; /* Evita partirse */
+        -webkit-column-break-inside: avoid;
+        display: inline-block; /* Vital para masonry */
+        width: 100%;
+    }
+    
+    .month-header {
+        background: var(--bg-light);
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .month-name { font-weight: 800; color: var(--inb-navy); text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem; }
+    .month-count { background: var(--inb-blue-soft); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
+
+    /* PERSONAS */
+    .person-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid var(--bg-light);
+        display: flex; align-items: center; gap: 12px;
+        transition: background 0.2s;
+    }
+    .person-item:last-child { border-bottom: none; }
+    .person-item:hover { background: #f8fafc; }
+
+    .p-date-box {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        width: 40px; height: 40px; background: #f1f5f9; border-radius: 10px;
+        color: var(--inb-navy); border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .p-day { font-size: 1.1rem; font-weight: 800; line-height: 1; }
+    .p-lbl { font-size: 0.55rem; font-weight: 600; text-transform: uppercase; }
+
+    .p-info { flex: 1; min-width: 0; }
+    .p-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .p-role { font-size: 0.75rem; color: var(--text-sec); display: flex; align-items: center; gap: 5px; }
+    .p-age-badge { 
+        font-size: 0.65rem; background: #ecfdf5; color: #059669; 
+        padding: 1px 5px; border-radius: 4px; border: 1px solid #d1fae5; font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* MES ACTUAL */
+    .month-card.current-month { border: 2px solid var(--inb-blue-soft); box-shadow: 0 10px 25px -5px rgba(0, 93, 170, 0.15); }
+    .month-card.current-month .month-header { background: var(--inb-blue-soft); }
+    .month-card.current-month .month-name { color: white; }
+    .month-card.current-month .month-count { background: white; color: var(--inb-blue-soft); }
+
+    /* ESTILO BARRA SCROLL */
+    .months-container::-webkit-scrollbar { width: 10px; }
+    .months-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 5px; }
+    .months-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 5px; border: 2px solid #f1f5f9; }
+    .months-container::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    /* MODAL */
+    .modal-overlay {
+        position: fixed; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        z-index: 9999; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-card {
+        background: white; width: 90%; max-width: 500px;
+        border-radius: var(--radius-card); padding: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .hidden { display: none !important; }
+    
+    /* Inputs y botones del modal */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-sec); margin-bottom: 5px; text-transform: uppercase; }
+    input { width: 100%; padding: 12px; border-radius: var(--radius-input); border: 1px solid var(--border); background: var(--bg-light); color: var(--text-main); font-size: 0.9rem; }
+    
+    .btn-primary { background: var(--inb-navy); color: white; border: none; padding: 12px 24px; border-radius: var(--radius-input); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-sec); padding: 10px 20px; border-radius: var(--radius-input); cursor: pointer; }
+
+</style>
+
+<div class="bday-layout">
+    
+    <div class="bday-header">
+        <div class="header-titles">
+            <h2><i class="ph-duotone ph-cake"></i> Cumpleaños del Equipo</h2>
+            <p>Calendario anual de celebraciones</p>
+        </div>
+        <button class="btn-primary" onclick="abrirModal()">
+            <i class="ph-bold ph-plus"></i> Agregar Manual
+        </button>
+    </div>
+
+    <div class="months-wrapper">
+        <div id="months-grid" class="months-container">
+            <div style="text-align: center; padding: 80px; color: #94a3b8; width: 100%;">
+                <i class="ph-duotone ph-spinner-gap spin" style="font-size: 3rem;"></i>
+                <p style="margin-top: 10px;">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="modal-add" class="modal-overlay hidden">
+    <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0; color:var(--inb-navy);">Nuevo Cumpleañero</h3>
+            <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-sec);">&times;</button>
+        </div>
+
+        <div class="form-group">
+            <label>Nombre Completo</label>
+            <input type="text" id="inp-nombre" placeholder="Ej. Mariana López">
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div class="form-group">
+                <label>Fecha Nacimiento</label>
+                <input type="date" id="inp-fecha">
+            </div>
+            <div class="form-group">
+                <label>Plaza / Área</label>
+                <input type="text" id="inp-plaza" placeholder="Ej. Ventas">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="inp-correo">
+        </div>
+
+        <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" id="inp-telefono">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn-primary" onclick="guardarCumpleanos()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        const meses = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+        
+        initCumpleanos();
+
+        async function initCumpleanos() {
+            try {
+                // 1. EXTRAER DE CANDIDATOS
+                const { data: candidates, error: err1 } = await window.supabase
+                    .from('candidates')
+                    .select('full_name, birth_date, plaza, email, phone')
+                    .not('birth_date', 'is', null);
+
+                // 2. EXTRAER DE MANUALES
+                const { data: extras, error: err2 } = await window.supabase
+                    .from('cumpleanos_extras')
+                    .select('*');
+
+                if (err1) console.error(err1);
+                if (err2) console.error(err2);
+
+                const listaFinal = procesarYUnir(candidates || [], extras || []);
+                renderizarMeses(listaFinal);
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('months-grid').innerHTML = `<p style="text-align:center; color:red; width:100%;">Error de carga.</p>`;
+            }
+        }
+
+        function procesarYUnir(autoList, manualList) {
+            let combined = [];
+            autoList.forEach(c => combined.push(crearObjetoPersona(c.full_name, c.birth_date, c.plaza, c.phone, c.email)));
+            manualList.forEach(m => combined.push(crearObjetoPersona(m.nombre_completo, m.fecha_nacimiento, m.plaza, m.telefono, m.email)));
+            return combined;
+        }
+
+        function crearObjetoPersona(nombre, fechaNac, plaza, tel, email) {
+            const dateObj = new Date(fechaNac + 'T12:00:00'); 
+            const mes = dateObj.getMonth();
+            const dia = dateObj.getDate();
+            const hoy = new Date();
+            const edad = hoy.getFullYear() - dateObj.getFullYear();
+            
+            return { nombre, plaza: plaza || 'Corporativo', dia, mes, edad };
+        }
+
+        function renderizarMeses(listaPersonas) {
+            const grid = document.getElementById('months-grid');
+            grid.innerHTML = ''; 
+
+            const mesActual = new Date().getMonth();
+
+            for (let i = 0; i < 12; i++) {
+                const cumpleaneros = listaPersonas.filter(p => p.mes === i);
+                cumpleaneros.sort((a, b) => a.dia - b.dia);
+
+                const isCurrent = (i === mesActual);
+                const cardClass = isCurrent ? 'month-card current-month' : 'month-card';
+                
+                let listHtml = '';
+                if (cumpleaneros.length > 0) {
+                    cumpleaneros.forEach(p => {
+                        listHtml += `
+                            <div class="person-item">
+                                <div class="p-date-box">
+                                    <span class="p-day">${p.dia}</span>
+                                    <span class="p-lbl">DÍA</span>
+                                </div>
+                                <div class="p-info">
+                                    <div class="p-name">${p.nombre}</div>
+                                    <div class="p-role">
+                                        <span class="p-age-badge">${p.edad} AÑOS</span>
+                                        <span style="font-size:0.7rem; color:#64748b;">• ${p.plaza ? p.plaza.substring(0,18) : ''}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    listHtml = `<div style="padding:15px; text-align:center; font-size:0.75rem; color:#cbd5e1; font-style:italic;">Sin eventos</div>`;
+                }
+
+                grid.innerHTML += `
+                    <div class="${cardClass}">
+                        <div class="month-header">
+                            <span class="month-name">${meses[i]}</span>
+                            <span class="month-count">${cumpleaneros.length}</span>
+                        </div>
+                        <div class="month-body">${listHtml}</div>
+                    </div>
+                `;
+            }
+
+            // Scroll al mes actual
+            setTimeout(() => {
+                const currentCard = document.querySelector('.current-month');
+                if(currentCard) {
+                    currentCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                }
+            }, 500);
+        }
+
+        window.abrirModal = () => document.getElementById('modal-add').classList.remove('hidden');
+        window.cerrarModal = () => document.getElementById('modal-add').classList.add('hidden');
+
+        window.guardarCumpleanos = async () => {
+            const btn = document.querySelector('#modal-add .btn-primary');
+            const txt = btn.innerText;
+            btn.innerText = '...'; btn.disabled = true;
+
+            const nombre = document.getElementById('inp-nombre').value;
+            const fecha = document.getElementById('inp-fecha').value;
+            const plaza = document.getElementById('inp-plaza').value;
+            const correo = document.getElementById('inp-correo').value;
+            const tel = document.getElementById('inp-telefono').value;
+
+            if(!nombre || !fecha) {
+                alert("Faltan datos obligatorios");
+                btn.innerText = txt; btn.disabled = false;
+                return;
+            }
+
+            try {
+                const { error } = await window.supabase.from('cumpleanos_extras').insert([{
+                    nombre_completo: nombre, fecha_nacimiento: fecha,
+                    plaza: plaza, email: correo, telefono: tel
+                }]);
+                if(error) throw error;
+                
+                document.getElementById('inp-nombre').value = '';
+                document.getElementById('inp-fecha').value = '';
+                cerrarModal();
+                initCumpleanos();
+            } catch(e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.innerText = txt; btn.disabled = false;
+            }
+        }
+    })();
+</script>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* --- ESTÉTICA CORPORATIVA INBURSA --- */
+        :root {
+            --inb-navy: #003366;       /* Azul Inbursa */
+            --inb-red: #E30613;        /* Rojo Inbursa */
+            --inb-blue-soft: #005DAA;  /* Azul Profesional */
+            --white: #FFFFFF;
+            --bg-light: #F8FAFC;
+            --border: #E2E8F0;
+            --text-main: #1e293b;
+            --text-sec: #64748b;
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body {
+            margin: 0; padding: 20px; font-family: 'Inter', sans-serif;
+            background-color: transparent; height: 100vh; color: var(--text-main);
+            overflow: hidden;
+        }
+
+        #layout {
+            display: flex; height: 100%; gap: 20px; max-width: 1400px;
+            margin: 0 auto; animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* SIDEBAR */
+        #sidebar {
+            width: 280px; background: var(--white); border-radius: 12px;
+            border: 1px solid var(--border); display: flex; flex-direction: column;
+            box-shadow: var(--shadow-card); overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px; background: var(--inb-navy); color: var(--white);
+            font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;
+        }
+
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 10px; }
+
+        .list-section-title {
+            font-size: 0.75rem; color: var(--text-sec); font-weight: 700; 
+            text-transform: uppercase; letter-spacing: 0.5px; margin: 15px 0 5px 10px;
+        }
+
+        .table-list, .bucket-list { list-style: none; padding: 0; margin: 0; }
+
+        .nav-item {
+            padding: 10px 15px; margin-bottom: 4px; border-radius: 6px; cursor: pointer;
+            color: var(--text-sec); font-weight: 500; font-size: 0.9rem; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-item:hover { background: #F1F5F9; color: var(--inb-navy); }
+        .nav-item.active {
+            background: rgba(0, 93, 170, 0.1); color: var(--inb-blue-soft);
+            font-weight: 700; border-left: 3px solid var(--inb-blue-soft);
+        }
+        .nav-item i { font-size: 1.1rem; }
+
+        /* CONTENT */
+        #content {
+            flex: 1; background: var(--white); border-radius: 12px;
+            border: 1px solid var(--border); box-shadow: var(--shadow-card);
+            display: flex; flex-direction: column; overflow: hidden; position: relative;
+        }
+
+        .toolbar {
+            padding: 20px; border-bottom: 1px solid var(--border); display: flex;
+            justify-content: space-between; align-items: center; background: var(--white);
+        }
+        .toolbar h2 { margin: 0; font-size: 1.25rem; color: var(--inb-navy); font-weight: 700; display: flex; align-items: center; gap: 10px;}
+        .toolbar .type-badge { font-size: 0.7rem; background: var(--inb-blue-soft); color: white; padding: 2px 8px; border-radius: 10px; font-weight: 600; vertical-align: middle; }
+
+        .actions { display: flex; gap: 10px; }
+
+        button {
+            border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--inb-navy); color: white; box-shadow: 0 2px 4px rgba(0, 51, 102, 0.2); }
+        .btn-primary:hover { background: #002244; }
+
+        .btn-secondary { background: var(--white); border: 1px solid var(--border); color: var(--text-sec); }
+        .btn-secondary:hover { border-color: var(--inb-blue-soft); color: var(--inb-blue-soft); }
+
+        .search-box {
+            padding: 10px 15px; border: 1px solid var(--border); border-radius: 6px;
+            background: var(--bg-light); font-size: 0.9rem; width: 250px;
+            color: var(--text-main); transition: all 0.2s;
+        }
+        .search-box:focus {
+            background: var(--white); border-color: var(--inb-blue-soft);
+            box-shadow: 0 0 0 3px rgba(0, 93, 170, 0.1);
+        }
+
+        .table-container { flex: 1; overflow: auto; padding: 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 800px; }
+        thead { background: #F8FAFC; position: sticky; top: 0; z-index: 10; }
+        th {
+            text-align: left; padding: 14px 20px; color: var(--inb-navy); font-weight: 600;
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border); white-space: nowrap;
+        }
+        td { padding: 12px 20px; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
+        tr:hover td { background: #F1F5F9; }
+
+        .btn-icon { padding: 6px; border-radius: 4px; background: transparent; color: var(--text-sec); font-size: 1.1rem; }
+        .btn-icon:hover.edit { color: var(--inb-blue-soft); background: rgba(0, 93, 170, 0.1); }
+        .btn-icon:hover.delete { color: var(--inb-red); background: rgba(227, 6, 19, 0.1); }
+        .btn-icon:hover.download { color: var(--inb-navy); background: #e0f2fe; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; transition: opacity 0.2s;
+        }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        .modal-card {
+            background: var(--white); width: 500px; max-width: 90%; max-height: 85vh;
+            border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            display: flex; flex-direction: column; overflow: hidden;
+            transform: scale(0.95); transition: transform 0.2s;
+        }
+        .modal-overlay.open .modal-card { transform: scale(1); }
+
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--white); }
+        .modal-header h3 { margin: 0; color: var(--inb-navy); font-size: 1.1rem; }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); background: #F8FAFC; display: flex; justify-content: flex-end; gap: 10px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-sec); margin-bottom: 5px; text-transform: uppercase; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;
+            font-family: inherit; font-size: 0.95rem; background: var(--white);
+        }
+        .form-group input:focus { border-color: var(--inb-blue-soft); outline: none; box-shadow: 0 0 0 3px rgba(0, 93, 170, 0.1); }
+        
+        /* Utility */
+        .hidden { display: none !important; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <div id="layout">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <i class="ph-fill ph-database"></i> Explorer DB
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="list-section-title">Tablas Públicas</div>
+                <ul id="table-list" class="table-list">
+                    <li style="padding:10px; text-align:center; color:#94a3b8; font-size:0.8rem;">
+                        <i class="ph-duotone ph-spinner-gap ph-spin"></i>
+                    </li>
+                </ul>
+
+                <div class="list-section-title" style="margin-top: 20px;">Storage (Buckets)</div>
+                <ul id="bucket-list" class="bucket-list">
+                    <li style="padding:10px; text-align:center; color:#94a3b8; font-size:0.8rem;">
+                        Cargando...
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <main id="content">
+            <div class="toolbar">
+                <h2 id="view-title">
+                    Seleccione un item
+                </h2>
+                <div class="actions" id="view-actions" style="display:none;">
+                    <input type="text" id="search-input" class="search-box" placeholder="Filtrar..." onkeyup="filterView()">
+                    <button class="btn-secondary" onclick="refreshCurrentView()"><i class="ph-bold ph-arrows-clockwise"></i></button>
+                    <button id="btn-new-record" class="btn-primary" onclick="openModal()"><i class="ph-bold ph-plus"></i> Nuevo</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="data-table">
+                    <tbody id="empty-state">
+                        <tr>
+                            <td colspan="100" style="text-align:center; padding: 50px; color:#94a3b8;">
+                                <i class="ph-duotone ph-circles-three-plus" style="font-size: 3rem; opacity:0.5; margin-bottom:10px;"></i>
+                                <p>Explorador Dinámico de Base de Datos</p>
+                                <small>Selecciona una tabla o bucket del menú.</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title">Registro</h3>
+                <button class="btn-icon" onclick="closeModal()"><i class="ph-bold ph-x"></i></button>
+            </div>
+            <div class="modal-body" id="modal-form"></div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveData()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // --- ESTADO GLOBAL ---
+            let currentViewType = null; // 'table' | 'bucket'
+            let currentResource = null; // Nombre tabla o bucket
+            let viewData = [];          // Datos actuales en memoria
+            let tablePrimaryKey = 'id';
+
+            // --- 1. INICIALIZACIÓN DINÁMICA ---
+            async function initExplorer() {
+                if(!window.supabase) return console.error("Supabase client not found");
+
+                // A. Cargar Tablas (Intenta RPC, fallback a lista manual)
+                const tableListEl = document.getElementById('table-list');
+                tableListEl.innerHTML = '';
+                
+                try {
+                    // Intento 1: Función RPC 'get_tables' (La ideal)
+                    const { data: tables, error } = await window.supabase.rpc('get_tables');
+                    
+                    let tableNames = [];
+                    if(!error && tables) {
+                        tableNames = tables;
+                    } else {
+                        // Intento 2: Fallback Manual si no han corrido el script SQL
+                        console.warn("Función 'get_tables' no encontrada. Usando lista estática.");
+                        tableNames = ['agentes', 'candidates', 'equipo', 'facturas', 'menus', 'tasks'];
+                    }
+
+                    tableNames.sort().forEach(t => {
+                        const li = document.createElement('li');
+                        li.className = 'nav-item';
+                        li.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><i class="ph-bold ph-table"></i> ${t}</div>`;
+                        li.onclick = () => loadTable(t, li);
+                        tableListEl.appendChild(li);
+                    });
+
+                } catch (e) {
+                    tableListEl.innerHTML = '<li style="color:red; font-size:0.8rem; padding:10px;">Error cargando tablas</li>';
+                }
+
+                // B. Cargar Buckets (Storage)
+                const bucketListEl = document.getElementById('bucket-list');
+                bucketListEl.innerHTML = '';
+                
+                try {
+                    const { data: buckets, error: bError } = await window.supabase.storage.listBuckets();
+                    
+                    if(bError) throw bError;
+                    
+                    if(buckets && buckets.length > 0) {
+                        buckets.forEach(b => {
+                            const li = document.createElement('li');
+                            li.className = 'nav-item';
+                            li.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><i class="ph-bold ph-cube"></i> ${b.name}</div>`;
+                            li.onclick = () => loadBucket(b.name, li);
+                            bucketListEl.appendChild(li);
+                        });
+                    } else {
+                        bucketListEl.innerHTML = '<li style="padding:10px; color:#94a3b8; font-size:0.8rem;">Sin buckets públicos</li>';
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    // A veces listBuckets falla si no hay permisos, mostramos manual común
+                    bucketListEl.innerHTML = '<li style="padding:10px; color:#94a3b8; font-size:0.8rem;">No accesible</li>';
+                }
+            }
+
+            // --- 2. CARGAR TABLA ---
+            window.loadTable = async function(tableName, uiElement) {
+                // UI Update
+                updateActiveNav(uiElement);
+                currentViewType = 'table';
+                currentResource = tableName;
+                
+                document.getElementById('view-title').innerHTML = `${tableName.toUpperCase()} <span class="type-badge">TABLA</span>`;
+                document.getElementById('view-actions').style.display = 'flex';
+                document.getElementById('btn-new-record').style.display = 'flex'; // Mostrar btn nuevo
+                document.getElementById('search-input').value = '';
+
+                const tableEl = document.getElementById('data-table');
+                tableEl.innerHTML = '<tr><td colspan="100" style="text-align:center; padding:50px; color:#64748b;"><i class="ph-duotone ph-spinner-gap ph-spin" style="font-size:2rem;"></i><br>Consultando datos...</td></tr>';
+
+                // Detectar PK (simple)
+                tablePrimaryKey = 'id'; // Default standar
+
+                const { data, error } = await window.supabase.from(tableName).select('*').limit(100);
+
+                if(error) {
+                    tableEl.innerHTML = `<tr><td colspan="100" style="color:var(--inb-red); text-align:center; padding:20px;">Error: ${error.message}</td></tr>`;
+                    return;
+                }
+
+                viewData = data || [];
+                renderTableView(viewData);
+            };
+
+            function renderTableView(data) {
+                const tableEl = document.getElementById('data-table');
+                if(data.length === 0) {
+                    tableEl.innerHTML = '<tr><td colspan="100" style="text-align:center; padding:40px; color:#94a3b8;">Tabla vacía o sin registros.</td></tr>';
+                    return;
+                }
+
+                const columns = Object.keys(data[0]);
+                let html = '<thead><tr>';
+                columns.forEach(col => html += `<th>${col}</th>`);
+                html += '<th style="text-align:right;">ACCIONES</th></tr></thead><tbody>';
+
+                data.forEach(row => {
+                    html += `<tr>`;
+                    columns.forEach(col => {
+                        let val = row[col];
+                        if(typeof val === 'object' && val !== null) val = JSON.stringify(val);
+                        if(val === null) val = '<span style="color:#cbd5e1;">NULL</span>';
+                        else if(typeof val === 'boolean') val = val ? '<span style="color:green">True</span>' : '<span style="color:red">False</span>';
+                        else if(String(val).length > 50) val = String(val).substring(0,50) + '...';
+                        html += `<td>${val}</td>`;
+                    });
+
+                    // PK detection logic per row if needed, usually 'id'
+                    const pk = row.id || row.uuid || row.uid || row[columns[0]];
+
+                    html += `
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button class="btn-icon edit" onclick='openModal(${JSON.stringify(pk)})' title="Editar">
+                                <i class="ph-bold ph-pencil-simple"></i>
+                            </button>
+                            <button class="btn-icon delete" onclick="deleteRow('${pk}')" title="Eliminar">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody>';
+                tableEl.innerHTML = html;
+            }
+
+            // --- 3. CARGAR BUCKET (ARCHIVOS) ---
+            window.loadBucket = async function(bucketName, uiElement) {
+                updateActiveNav(uiElement);
+                currentViewType = 'bucket';
+                currentResource = bucketName;
+
+                document.getElementById('view-title').innerHTML = `${bucketName.toUpperCase()} <span class="type-badge" style="background:#8b5cf6;">STORAGE</span>`;
+                document.getElementById('view-actions').style.display = 'flex';
+                document.getElementById('btn-new-record').style.display = 'none'; // Ocultar btn nuevo (complejo subir archivos aquí)
+                document.getElementById('search-input').value = '';
+
+                const tableEl = document.getElementById('data-table');
+                tableEl.innerHTML = '<tr><td colspan="100" style="text-align:center; padding:50px;"><i class="ph-duotone ph-spinner-gap ph-spin"></i> Listando archivos...</td></tr>';
+
+                const { data, error } = await window.supabase.storage.from(bucketName).list('', { limit: 100, offset: 0 });
+
+                if(error) {
+                    tableEl.innerHTML = `<tr><td colspan="100" style="color:red; text-align:center;">Error Storage: ${error.message}</td></tr>`;
+                    return;
+                }
+
+                viewData = data || [];
+                renderBucketView(viewData);
+            };
+
+            function renderBucketView(files) {
+                const tableEl = document.getElementById('data-table');
+                if(files.length === 0) {
+                    tableEl.innerHTML = '<tr><td colspan="100" style="text-align:center; padding:40px; color:#94a3b8;">Bucket vacío.</td></tr>';
+                    return;
+                }
+
+                let html = '<thead><tr><th>NOMBRE ARCHIVO</th><th>TAMAÑO</th><th>TIPO</th><th>CREADO</th><th style="text-align:right;">ACCIONES</th></tr></thead><tbody>';
+
+                files.forEach(f => {
+                    if(f.name === '.emptyFolderPlaceholder') return; // Ignorar placeholder
+
+                    const sizeKB = (f.metadata.size / 1024).toFixed(1) + ' KB';
+                    const date = new Date(f.created_at).toLocaleDateString();
+                    
+                    // Generar URL pública
+                    const { data: publicUrl } = window.supabase.storage.from(currentResource).getPublicUrl(f.name);
+                    const link = publicUrl.publicUrl;
+
+                    html += `<tr>
+                        <td><div style="display:flex; align-items:center; gap:10px;"><i class="ph-fill ph-file"></i> ${f.name}</div></td>
+                        <td>${sizeKB}</td>
+                        <td>${f.metadata.mimetype || 'N/A'}</td>
+                        <td>${date}</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <a href="${link}" target="_blank" class="btn-icon download" title="Descargar/Ver" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
+                                <i class="ph-bold ph-download-simple"></i>
+                            </a>
+                            <button class="btn-icon delete" onclick="deleteFile('${f.name}')" title="Eliminar">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody>';
+                tableEl.innerHTML = html;
+            }
+
+            // --- 4. UTILIDADES ---
+            window.refreshCurrentView = function() {
+                if(currentViewType === 'table') loadTable(currentResource, document.querySelector('.nav-item.active'));
+                if(currentViewType === 'bucket') loadBucket(currentResource, document.querySelector('.nav-item.active'));
+            };
+
+            function updateActiveNav(el) {
+                document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+                if(el) el.classList.add('active');
+            }
+
+            window.filterView = function() {
+                const q = document.getElementById('search-input').value.toLowerCase();
+                if(!viewData.length) return;
+
+                if(currentViewType === 'table') {
+                    const filtered = viewData.filter(row => Object.values(row).some(val => String(val).toLowerCase().includes(q)));
+                    renderTableView(filtered);
+                } else if(currentViewType === 'bucket') {
+                    const filtered = viewData.filter(f => f.name.toLowerCase().includes(q));
+                    renderBucketView(filtered);
+                }
+            };
+
+            // --- 5. LÓGICA MODAL (CRUD TABLAS) ---
+            // Reutilizamos la lógica del anterior, pero simplificada para adaptación dinámica
+            window.openModal = function(idToEdit = null) {
+                if(currentViewType !== 'table') return;
+                
+                const modal = document.getElementById('modal');
+                const title = document.getElementById('modal-title');
+                const form = document.getElementById('modal-form');
+                form.innerHTML = '';
+
+                // Obtener columnas de los datos actuales
+                if(viewData.length === 0) {
+                    form.innerHTML = '<p>No se puede inferir el esquema (tabla vacía).</p>';
+                    modal.classList.add('open');
+                    return;
+                }
+                
+                const columns = Object.keys(viewData[0]).filter(k => k !== 'id' && k !== 'created_at');
+                
+                let record = null;
+                if(idToEdit) {
+                    editingId = idToEdit;
+                    title.textContent = `Editar Registro`;
+                    // Búsqueda aproximada de PK
+                    record = viewData.find(r => r.id == idToEdit || r.uuid == idToEdit || r.uid == idToEdit || Object.values(r)[0] == idToEdit);
+                } else {
+                    editingId = null;
+                    title.textContent = "Nuevo Registro";
+                }
+
+                columns.forEach(col => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    let val = record ? record[col] : '';
+                    if(typeof val === 'object') val = JSON.stringify(val);
+                    
+                    div.innerHTML = `<label>${col}</label><input type="text" id="input-${col}" value='${val || ''}'>`;
+                    form.appendChild(div);
+                });
+                
+                modal.classList.add('open');
+            };
+
+            window.closeModal = function() { document.getElementById('modal').classList.remove('open'); };
+
+            window.saveData = async function() {
+                const inputs = document.getElementById('modal-form').querySelectorAll('input');
+                const payload = {};
+                inputs.forEach(el => {
+                    const key = el.id.replace('input-', '');
+                    payload[key] = el.value === '' ? null : el.value;
+                });
+
+                let res;
+                if(editingId) {
+                    // Update asumiendo ID
+                    res = await window.supabase.from(currentResource).update(payload).eq('id', editingId);
+                } else {
+                    res = await window.supabase.from(currentResource).insert([payload]);
+                }
+
+                if(res.error) alert(res.error.message);
+                else {
+                    closeModal();
+                    refreshCurrentView();
+                }
+            };
+
+            window.deleteRow = async function(id) {
+                if(!confirm("¿Eliminar registro?")) return;
+                // Intentamos ID, si falla habría que mejorar la lógica de PK dinámica
+                const { error } = await window.supabase.from(currentResource).delete().eq('id', id);
+                if(error) alert(error.message);
+                else refreshCurrentView();
+            };
+
+            // --- 6. LÓGICA BUCKET (ELIMINAR ARCHIVO) ---
+            window.deleteFile = async function(fileName) {
+                if(!confirm(`¿Eliminar archivo "${fileName}" permanentemente?`)) return;
+                const { error } = await window.supabase.storage.from(currentResource).remove([fileName]);
+                if(error) alert(error.message);
+                else refreshCurrentView();
+            };
+
+            // INIT
+            initExplorer();
+
+        })();
+    </script>
+</body>
+</html>

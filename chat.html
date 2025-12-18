@@ -1,0 +1,392 @@
+<style>
+    /* RESET BASE */
+    #chat-fullscreen-container {
+        width: 100%; height: 100%; display: flex;
+        background: #ffffff; font-family: 'Inter', sans-serif;
+        color: #1f2937; overflow: hidden; position: relative;
+    }
+    #chat-fullscreen-container * { box-sizing: border-box; }
+
+    /* SIDEBAR */
+    .gc-sidebar { width: 320px; background: #f8fafc; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; }
+    .gc-sidebar-header { padding: 20px; background: #ffffff; border-bottom: 1px solid #e2e8f0; height: 70px; display: flex; align-items: center; font-weight: 800; font-size: 1.2rem; color: #102c54; }
+    .gc-list-content { flex: 1; overflow-y: auto; padding: 10px; }
+
+    /* ITEMS LISTA */
+    .gc-section-title { font-size: 0.75rem; font-weight: 800; color: #64748b; margin: 15px 10px 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .gc-row { padding: 12px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; margin-bottom: 2px; transition: 0.2s; color: #334155; position: relative; }
+    .gc-row:hover { background: #e2e8f0; }
+    .gc-row.active { background: #102c54; color: white; }
+    .gc-row.active .gc-section-title { color: #cbd5e1; }
+    
+    .gc-avatar { width: 40px; height: 40px; border-radius: 10px; color: white; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; flex-shrink: 0; }
+    .av-global { background: #2563eb; }
+    .av-rol { background: #3b82f6; }
+    .av-user { background: #0ea5e9; }
+    
+    /* BADGE DE NOTIFICACIÓN */
+    .gc-row-badge { 
+        background: #ef4444; color: white; 
+        font-size: 0.7rem; font-weight: bold; 
+        min-width: 20px; height: 20px; 
+        padding: 0 6px; border-radius: 10px; 
+        display: none; align-items: center; justify-content: center;
+        box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+    }
+
+    /* MAIN CHAT */
+    .gc-main { flex: 1; display: flex; flex-direction: column; background: #ffffff; position: relative; }
+    .gc-empty-state { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #94a3b8; }
+    .gc-empty-state i { font-size: 4rem; margin-bottom: 10px; opacity: 0.3; }
+    
+    .gc-chat-header { height: 70px; padding: 0 25px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+    .gc-chat-title { font-size: 1.1rem; font-weight: 700; color: #102c54; }
+
+    .gc-messages { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 10px; background: #ffffff; }
+
+    /* BURBUJAS */
+    .gc-bubble { padding: 12px 18px; border-radius: 12px; max-width: 60%; font-size: 0.95rem; line-height: 1.5; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .gc-mine { align-self: flex-end; background: #102c54; color: white; border-bottom-right-radius: 2px; }
+    .gc-other { align-self: flex-start; background: #f1f5f9; border: 1px solid #e2e8f0; border-bottom-left-radius: 2px; color: #1e293b; }
+
+    /* ESTILOS DE LOS CHECKS (VISTO) */
+    .gc-check-container { display: inline-flex; margin-left: 6px; vertical-align: middle; font-size: 1rem; }
+    .check-sent { color: rgba(255,255,255,0.5); } /* Gris transparente */
+    .check-read { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); } /* Azul brillante */
+
+    /* INPUT AREA */
+    .gc-input-area { padding: 20px; background: #ffffff; border-top: 1px solid #e2e8f0; }
+    .gc-input-wrapper { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 5px; border-radius: 30px; border: 1px solid #cbd5e1; }
+    .gc-input { flex: 1; padding: 12px 15px; border: none; background: transparent; outline: none; font-size: 1rem; color: #333; }
+    .gc-icon-btn { width: 40px; height: 40px; border-radius: 50%; border:none; cursor: pointer; display: flex; justify-content: center; align-items: center; transition:0.2s; font-size: 1.2rem;}
+    .btn-attach { color: #64748b; background: transparent; }
+    .btn-attach:hover { background: #e2e8f0; }
+    .btn-send { background: #102c54; color: white; margin-right: 5px;}
+    .btn-send:hover { background: #0b1f3d; }
+    .gc-file-preview { background: #eff6ff; padding: 10px 20px; font-size: 0.9rem; color: #1e40af; display: none; justify-content: space-between; align-items: center; border-bottom: 1px solid #dbeafe; }
+</style>
+
+<div id="chat-fullscreen-container">
+    <aside class="gc-sidebar">
+        <div class="gc-sidebar-header">
+            <i class="ph-bold ph-chats-circle" style="margin-right: 10px; font-size: 1.5rem;"></i>
+            Mensajería
+        </div>
+        <div class="gc-list-content" id="gcListContainer">
+            <div style="text-align:center; padding:30px; color:#94a3b8;"><div class="loader"></div></div>
+        </div>
+    </aside>
+
+    <main class="gc-main">
+        <div id="gcEmptyState" class="gc-empty-state">
+            <i class="ph-duotone ph-chat-teardrop-text"></i>
+            <h3>Selecciona una conversación</h3>
+            <p style="font-size:0.9rem;">Tus mensajes aparecerán aquí.</p>
+        </div>
+
+        <div id="gcChatContainer" style="display:none; flex-direction:column; height:100%;">
+            <div class="gc-chat-header">
+                <div>
+                    <h3 class="gc-chat-title" id="gcTitle">Chat</h3>
+                    <small id="gcSubtitle" style="color:#64748b; font-size:0.8rem;">...</small>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <i class="ph-bold ph-trash" id="gcEmptyBtn" title="Vaciar chat" style="cursor:pointer; color:#ef4444; opacity:0.8; font-size: 1.3rem;"></i>
+                </div>
+            </div>
+
+            <div class="gc-messages" id="gcMessages"></div>
+            
+            <div class="gc-file-preview" id="gcFilePreview">
+                <span id="gcFileName">archivo.jpg</span>
+                <i class="ph-bold ph-x" style="cursor:pointer" onclick="window.gcClearFile()"></i>
+            </div>
+            
+            <div class="gc-input-area">
+                <div class="gc-input-wrapper">
+                    <input type="file" id="gcFileInput" hidden onchange="window.gcHandleFile(this)">
+                    <button class="gc-icon-btn btn-attach" onclick="document.getElementById('gcFileInput').click()">
+                        <i class="ph-bold ph-paperclip"></i>
+                    </button>
+                    <input type="text" class="gc-input" id="gcInput" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') window.gcSend()">
+                    <button class="gc-icon-btn btn-send" onclick="window.gcSend()">
+                        <i class="ph-bold ph-paper-plane-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    (function() {
+        const supabase = window.supabase;
+        // DOM Elements
+        const listContainer = document.getElementById('gcListContainer');
+        const emptyState = document.getElementById('gcEmptyState');
+        const chatContainer = document.getElementById('gcChatContainer');
+        const msgsContainer = document.getElementById('gcMessages');
+        const titleEl = document.getElementById('gcTitle');
+        const subTitleEl = document.getElementById('gcSubtitle');
+        const emptyBtn = document.getElementById('gcEmptyBtn');
+
+        let ME = null;
+        let activeChat = null;
+        let currentFile = null;
+        let activeRowElement = null;
+
+        // 1. SESIÓN
+        const sessionStr = localStorage.getItem('galher_session_v2');
+        if(!sessionStr || !supabase) { listContainer.innerHTML = 'Error de sesión'; return; }
+        let s = JSON.parse(sessionStr);
+
+        async function identifyUser() {
+            if(!s.id && s.nombre) {
+                const { data } = await supabase.from('equipo').select('id, rol').eq('nombre', s.nombre).single();
+                if(data) { s.id = data.id; s.rol = data.rol; }
+            }
+            ME = { id: s.id, nombre: s.nombre, rol: (s.rol || 'INVITADO').toUpperCase() };
+            await loadChannels();
+        }
+        
+        const SUPER_ADMINS = ['DIRECCION', 'ADMINISTRADOR', 'ADMIN'];
+
+        // 2. LOGICA VISUAL
+        emptyBtn.onclick = async () => {
+            if(!activeChat || !confirm("¿Borrar historial?")) return;
+            let q = supabase.from('mensajes_interno').delete();
+            if (activeChat.type === 'GLOBAL') { if(!SUPER_ADMINS.includes(ME.rol)) return; q = q.eq('tipo_chat', 'GLOBAL'); }
+            else if (activeChat.type === 'ROL') q = q.eq('tipo_chat', 'ROL').eq('target_id', activeChat.target);
+            else q = q.eq('tipo_chat', 'PRIVADO').or(`and(sender_id.eq.${ME.id},target_id.eq.${activeChat.target}),and(sender_id.eq.${activeChat.target},target_id.eq.${ME.id})`);
+            await q; msgsContainer.innerHTML = '';
+        };
+
+        window.gcHandleFile = (i) => { if(i.files[0]) { currentFile = i.files[0]; document.getElementById('gcFilePreview').style.display='flex'; document.getElementById('gcFileName').innerText=currentFile.name; } };
+        window.gcClearFile = () => { currentFile = null; document.getElementById('gcFileInput').value=''; document.getElementById('gcFilePreview').style.display='none'; };
+
+        window.gcSend = async () => {
+            const input = document.getElementById('gcInput');
+            const txt = input.value.trim();
+            if(!txt && !currentFile) return;
+            input.value = '';
+
+            let url=null, type=null;
+            if(currentFile) {
+                try {
+                    const ext = currentFile.name.split('.').pop();
+                    const path = `${Date.now()}.${ext}`;
+                    await supabase.storage.from('chat_files').upload(path, currentFile);
+                    const { data } = supabase.storage.from('chat_files').getPublicUrl(path);
+                    url = data.publicUrl; type = currentFile.type.startsWith('image/')?'image':'file';
+                } catch(e) {} window.gcClearFile();
+            }
+
+            await supabase.from('mensajes_interno').insert([{
+                mensaje: txt, sender_id: ME.id, sender_name: ME.nombre, sender_role: ME.rol,
+                tipo_chat: activeChat.type, target_id: activeChat.target,
+                attachment_url: url, attachment_type: type, leido: false
+            }]);
+        };
+
+        // 3. CARGAR CANALES Y BADGES
+        async function loadChannels() {
+            listContainer.innerHTML = '';
+            const SOY_ADMIN = SUPER_ADMINS.includes(ME.rol);
+            const addSection = (t) => { const d=document.createElement('div'); d.className='gc-section-title'; d.innerText=t; listContainer.appendChild(d); };
+
+            addSection('Canales');
+            createRow('GLOBAL', 'TODOS', 'General', 'av-global', 'ph-globe', 'Todos');
+
+            addSection('Equipos');
+            if (SOY_ADMIN) {
+                const { data } = await supabase.from('equipo').select('rol');
+                if(data) [...new Set(data.map(r => r.rol.toUpperCase()))].sort().forEach(r => createRow('ROL', r, r, 'av-rol', 'ph-users-three', 'Grupo'));
+            } else { createRow('ROL', ME.rol, ME.rol, 'av-rol', 'ph-users-three', 'Mi Equipo'); }
+
+            addSection('Directos');
+            const { data: users } = await supabase.from('equipo').select('id, nombre, rol').neq('id', ME.id);
+            if(users) users.forEach(u => { if(SOY_ADMIN || SUPER_ADMINS.includes(u.rol.toUpperCase())) createRow('PRIVADO', u.id, u.nombre, 'av-user', 'ph-user', u.rol); });
+            
+            checkInitialUnread(); // Cargar notificaciones
+        }
+
+        function createRow(type, target, name, avClass, icon, sub='') {
+            const div = document.createElement('div');
+            div.className = 'gc-row';
+            div.id = `row-${target}`; // ID ÚNICO para buscarlo luego
+            div.innerHTML = `
+                <div class="gc-avatar ${avClass}"><i class="ph-bold ${icon}"></i></div>
+                <div style="flex:1; overflow:hidden;">
+                    <div style="font-weight:700; font-size:0.9rem;">${name}</div>
+                    <div style="font-size:0.75rem; opacity:0.7;">${sub}</div>
+                </div>
+                <div class="gc-row-badge" id="badge-${target}">0</div>
+            `;
+            div.onclick = () => {
+                if(activeRowElement) activeRowElement.classList.remove('active');
+                div.classList.add('active'); activeRowElement = div;
+                openChat(type, target, name, sub);
+            };
+            listContainer.appendChild(div);
+        }
+
+        // 4. LOGICA DE BADGES (NOTIFICACIONES)
+        async function checkInitialUnread() {
+            // Buscar mensajes no leídos donde yo soy el destinatario
+            const { data } = await supabase.from('mensajes_interno').select('sender_id, tipo_chat, target_id')
+                .eq('leido', false);
+
+            if(data) {
+                const counts = {};
+                data.forEach(m => {
+                    let badgeKey = null;
+                    if (m.tipo_chat === 'PRIVADO' && m.target_id === ME.id) badgeKey = m.sender_id;
+                    else if (m.tipo_chat === 'ROL' && m.target_id === ME.rol) badgeKey = ME.rol;
+                    
+                    if(badgeKey) counts[badgeKey] = (counts[badgeKey] || 0) + 1;
+                });
+                
+                Object.keys(counts).forEach(k => updateBadge(k, counts[k]));
+            }
+        }
+
+        function updateBadge(targetId, count) {
+            const badge = document.getElementById(`badge-${targetId}`);
+            if(badge) {
+                const current = parseInt(badge.innerText) || 0;
+                // Si pasamos un count específico lo usamos, sino sumamos 1
+                const newVal = count !== undefined ? count : current + 1;
+                if(newVal > 0) {
+                    badge.innerText = newVal > 99 ? '+99' : newVal;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        // 5. ABRIR CHAT
+        async function openChat(type, target, name, sub) {
+            activeChat = { type, target };
+            emptyState.style.display = 'none';
+            chatContainer.style.display = 'flex';
+            titleEl.innerText = name;
+            subTitleEl.innerText = sub;
+            msgsContainer.innerHTML = '<div style="text-align:center; padding:30px; color:#ccc;">Cargando...</div>';
+
+            // 1. Quitar Badge visualmente
+            const badge = document.getElementById(`badge-${target}`);
+            if(badge) { badge.innerText = '0'; badge.style.display = 'none'; }
+
+            // 2. Marcar como leído en BD (Update masivo)
+            if(type === 'PRIVADO') {
+                await supabase.from('mensajes_interno').update({ leido: true })
+                    .eq('tipo_chat', 'PRIVADO').eq('sender_id', target).eq('target_id', ME.id).eq('leido', false);
+            } else if (type === 'ROL') {
+                // Lógica de roles: marcamos leídos los mensajes dirigidos a mi rol
+                await supabase.from('mensajes_interno').update({ leido: true })
+                    .eq('tipo_chat', 'ROL').eq('target_id', ME.rol).eq('leido', false);
+            }
+
+            // 3. Cargar Mensajes
+            let q = supabase.from('mensajes_interno').select('*').order('created_at', { ascending: true });
+            if (type === 'GLOBAL') q = q.eq('tipo_chat', 'GLOBAL');
+            else if (type === 'ROL') q = q.eq('tipo_chat', 'ROL').eq('target_id', target);
+            else q = q.eq('tipo_chat', 'PRIVADO').or(`and(sender_id.eq.${ME.id},target_id.eq.${target}),and(sender_id.eq.${target},target_id.eq.${ME.id})`);
+
+            const { data } = await q;
+            msgsContainer.innerHTML = '';
+            if(data) {
+                data.forEach(renderMessage);
+                setTimeout(() => msgsContainer.scrollTop = msgsContainer.scrollHeight, 100);
+            }
+        }
+
+        function renderMessage(m) {
+            const isMine = m.sender_id === ME.id;
+            const div = document.createElement('div');
+            div.className = `gc-bubble ${isMine ? 'gc-mine' : 'gc-other'}`;
+            div.id = `msg-${m.id}`; // ID para actualizar el check luego
+            
+            let content = `<div>${m.mensaje || ''}</div>`;
+            if(m.attachment_url) {
+                if(m.attachment_type === 'image') content += `<img src="${m.attachment_url}" style="max-width:100%; border-radius:8px; margin-top:5px;">`;
+                else content += `<br><a href="${m.attachment_url}" target="_blank">📎 Adjunto</a>`;
+            }
+
+            // LOGICA DE CHECKS (VISTO)
+            let checkHtml = '';
+            if (isMine) {
+                // Si está leido: checks azules, sino: check simple gris
+                const iconClass = m.leido ? 'ph-checks' : 'ph-check';
+                const colorClass = m.leido ? 'check-read' : 'check-sent';
+                checkHtml = `<span class="gc-check-container ${colorClass}"><i class="ph-bold ${iconClass}"></i></span>`;
+            }
+
+            const nameHtml = (!isMine && activeChat.type !== 'PRIVADO') 
+                ? `<div style="font-size:0.7rem; font-weight:bold; margin-bottom:2px; opacity:0.8; color:${isMine?'white':'#102c54'}">${m.sender_name}</div>` : '';
+
+            div.innerHTML = `
+                ${nameHtml}
+                ${content}
+                <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:4px;">
+                    <span style="font-size:0.65rem; opacity:0.6;">
+                        ${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                    </span>
+                    ${checkHtml}
+                </div>
+            `;
+            msgsContainer.appendChild(div);
+        }
+
+        // 6. REALTIME (Mensajes Nuevos + Actualización de Visto)
+        supabase.channel('chat_v3_full')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_interno' }, payload => {
+            const m = payload.new;
+            let isOpen = false;
+            
+            // Verificar si el chat está abierto
+            if(activeChat) {
+                if(activeChat.type === m.tipo_chat) {
+                    if(activeChat.type === 'PRIVADO') {
+                        if((m.sender_id === activeChat.target && m.target_id === ME.id) || (m.sender_id === ME.id && m.target_id === activeChat.target)) isOpen = true;
+                    } else if(activeChat.target === m.target_id) isOpen = true;
+                }
+            }
+
+            if(isOpen) {
+                // Si el chat está abierto y el mensaje es para mí, marcarlo como LEÍDO inmediatamente
+                if(m.sender_id !== ME.id) {
+                     // Optimista: renderizamos y luego actualizamos DB
+                     supabase.from('mensajes_interno').update({ leido: true }).eq('id', m.id).then();
+                }
+                renderMessage(m);
+                msgsContainer.scrollTop = msgsContainer.scrollHeight;
+            } else {
+                // Si el chat NO está abierto, actualizar BADGE
+                let badgeId = null;
+                if(m.tipo_chat === 'PRIVADO' && m.target_id === ME.id) badgeId = m.sender_id;
+                if(m.tipo_chat === 'ROL' && m.target_id === ME.rol) badgeId = ME.rol;
+                if(badgeId) updateBadge(badgeId); // +1 badge
+            }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_interno' }, payload => {
+            const m = payload.new;
+            // Si el mensaje se actualizó a leido=true y YO soy el que lo envió
+            if(m.sender_id === ME.id && m.leido) {
+                const msgEl = document.getElementById(`msg-${m.id}`);
+                if(msgEl) {
+                    // Actualizar icono visualmente sin recargar todo
+                    const checkContainer = msgEl.querySelector('.gc-check-container');
+                    if(checkContainer) {
+                        checkContainer.className = 'gc-check-container check-read';
+                        checkContainer.innerHTML = '<i class="ph-bold ph-checks"></i>';
+                    }
+                }
+            }
+        })
+        .subscribe();
+
+        identifyUser();
+    })();
+</script>

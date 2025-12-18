@@ -1,0 +1,623 @@
+<div class="asesores-wrapper animate-fade-in">
+
+    <style>
+        /* --- ESTILOS GENERALES (Mantenidos intactos) --- */
+        .asesores-container { display: flex; height: calc(100vh - 80px); gap: 20px; font-family: 'Inter', sans-serif; background-color: #f3f4f6; padding: 10px; border-radius: 12px; }
+        .list-sidebar { width: 400px; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); flex-shrink: 0; border: 1px solid #e5e7eb; }
+        .sidebar-header { padding: 1.2rem; border-bottom: 1px solid #f1f5f9; background: #fff; border-radius: 12px 12px 0 0; }
+        .filters-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .filter-select { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.75rem; color: #475569; background-color: #f8fafc; cursor: pointer; font-weight: 600; text-transform: uppercase; }
+        .search-box { position: relative; margin-bottom: 8px; }
+        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        .search-input { width: 100%; padding: 10px 10px 10px 38px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: #f8fafc; }
+        .search-input:focus { background: white; border-color: #3b82f6; }
+        .candidates-list { flex: 1; overflow-y: auto; padding: 12px; background: #f8fafc; }
+        
+        .candidate-card { background: white; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 10px; cursor: pointer; transition: all 0.2s ease; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .candidate-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+        .candidate-card.active { border-left: 4px solid #0061A9; background: white; box-shadow: 0 4px 12px rgba(0, 97, 169, 0.15); }
+        .c-name { font-weight: 700; color: #1e293b; font-size: 1rem; margin-bottom: 8px; text-transform: uppercase; }
+        .c-details-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
+        .c-meta { font-size: 0.75rem; color: #64748b; display: flex; align-items: center; gap: 6px; }
+        .c-meta i { color: #0061A9; font-size: 0.9rem; width: 16px; text-align: center; }
+        .c-clave { position: absolute; top: 16px; right: 16px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        
+        .detail-view { flex: 1; background: #f3f4f6; overflow-y: auto; position: relative; display: flex; flex-direction: column; border-radius: 12px; }
+        .detail-hero { background: linear-gradient(135deg, #0061A9 0%, #003a98 100%); color: white; padding: 2rem 2.5rem; border-radius: 12px 12px 0 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: flex-start; }
+        .hero-info h1 { font-size: 1.8rem; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hero-badges { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;}
+        .hero-badge { background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .hero-actions { display: flex; gap: 10px; }
+        
+        .btn-action { padding: 8px 16px; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 0.85rem; border: none; display: flex; align-items: center; gap: 8px; transition: transform 0.1s; }
+        .btn-edit { background: white; color: #0061A9; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-save { background: #16a34a; color: white; display: none; }
+        .btn-cancel { background: rgba(255,255,255,0.2); color: white; display: none; }
+        
+        /* Botones Panel Documentos */
+        .btn-zip, .btn-pdf { width: 100%; justify-content: center; margin-top: 10px; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; color: white; }
+        .btn-zip { background: #0f172a; }
+        .btn-zip:hover { background: #1e293b; }
+        .btn-pdf { background: #dc2626; }
+        .btn-pdf:hover { background: #b91c1c; }
+
+        .editing .btn-edit { display: none; }
+        .editing .btn-save { display: inline-flex; }
+        .editing .btn-cancel { display: inline-flex; }
+        
+        /* ESTILO PARA BOTÓN GMAIL */
+        .btn-gmail {
+            background: #EA4335; color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; margin-top: 5px; width: 100%; justify-content: center;
+            text-decoration: none; font-weight: 700; transition: background 0.2s;
+        }
+        .btn-gmail:hover { background: #c5221f; }
+
+        .detail-content { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .info-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-top: 4px solid #e2e8f0; }
+        .card-professional { border-top-color: #0061A9; }
+        .card-personal { border-top-color: #3b82f6; }
+        .card-contact { border-top-color: #f59e0b; }
+        .card-extra { border-top-color: #10b981; }
+        .card-dates { border-top-color: #8b5cf6; }
+        .card-docs { border-top-color: #0f172a; }
+        
+        .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+        .card-header i { font-size: 1.2rem; color: #64748b; }
+        .card-header h3 { font-size: 0.95rem; font-weight: 700; color: #334155; text-transform: uppercase; margin: 0; }
+        
+        .field-row { margin-bottom: 12px; }
+        .field-label { display: block; font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+        .field-value { font-size: 0.95rem; color: #1e293b; font-weight: 500; min-height: 24px; text-transform: uppercase; word-break: break-word; }
+        .editing .field-value { display: none; }
+        .field-input, .field-select { display: none; width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; text-transform: uppercase; }
+        .editing .field-input, .editing .field-select { display: block; }
+        
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #94a3b8; }
+
+        /* MODAL GESTION DOCS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; width: 1000px; max-width: 95%; height: 85vh; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 20px; background: #0061A9; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #f8fafc; }
+        .docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        
+        .doc-slot { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; text-align: center; position: relative; transition: all 0.2s; display: flex; flex-direction: column; justify-content: space-between; height: 170px; }
+        .doc-slot:hover { border-color: #0061A9; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .doc-slot.uploaded { border: 1px solid #16a34a; background: #f0fdf4; }
+        
+        .slot-icon { font-size: 2rem; color: #cbd5e1; margin-bottom: 5px; }
+        .doc-slot.uploaded .slot-icon { color: #16a34a; }
+        .slot-title { font-size: 0.7rem; font-weight: 700; color: #475569; margin-bottom: 10px; text-transform: uppercase; line-height: 1.2; min-height: 28px; display: flex; align-items: center; justify-content: center; }
+        
+        .actions-row { display: flex; gap: 5px; margin-top: auto; }
+        .btn-upload-sm { background: #e2e8f0; color: #334155; border: none; padding: 6px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-upload-sm:hover { background: #cbd5e1; }
+        
+        .btn-view-sm { background: #0061A9; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-delete-sm { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 6px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; width: 32px; display: flex; align-items: center; justify-content: center; }
+        .btn-delete-sm:hover { background: #fecaca; }
+
+        .upload-input { display: none; }
+        
+        .btn-download-all { background: white; color: #0061A9; border: none; padding: 8px 16px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-download-all:hover { background: #f1f5f9; }
+    </style>
+
+    <div class="asesores-container">
+        <div class="list-sidebar">
+            <div class="sidebar-header">
+                <div class="search-box">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="BUSCAR ASESOR...">
+                </div>
+                <div class="filters-grid">
+                    <select id="filterPlaza" class="filter-select"><option value="">TODAS LAS PLAZAS</option></select>
+                    <select id="filterPerfil" class="filter-select"><option value="">TODOS LOS PERFILES</option></select>
+                    <select id="filterTrimestre" class="filter-select" style="grid-column: 1 / -1;"><option value="">TODOS LOS TRIMESTRES</option></select>
+                </div>
+            </div>
+            <div id="candidatesList" class="candidates-list">
+                <div style="text-align:center; padding: 20px; color:#aaa;"><i class="ph ph-spinner-gap ph-spin" style="font-size: 1.5rem;"></i></div>
+            </div>
+        </div>
+
+        <div id="detailContainer" class="detail-view">
+            <div class="empty-state">
+                <i class="ph-duotone ph-identification-card" style="font-size: 5rem; opacity: 0.3; margin-bottom: 15px; color: #0061A9;"></i>
+                <p style="font-weight: 500;">SELECCIONA UN ASESOR</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="docsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div style="display:flex; flex-direction:column;">
+                    <h3 id="modalDocsTitle" style="margin:0;">EXPEDIENTE DIGITAL</h3>
+                    <small style="opacity:0.8; font-size:0.8rem;">GESTIÓN, DESCARGA Y ELIMINACIÓN DE ARCHIVOS</small>
+                </div>
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <button class="btn-download-all" onclick="downloadAllDocsZip()">
+                        <i class="ph-bold ph-download-simple"></i> DESCARGAR ZIP
+                    </button>
+                    <button onclick="closeDocsModal()" style="background:none; border:none; color:white; cursor:pointer; font-size:1.5rem;">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="docsGridContainer" class="docs-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (async function() {
+        // --- CARGAR LIBRERÍAS (ZIP, FILESAVER, JSPDF) ---
+        const loadScript = (src) => new Promise((resolve) => {
+            if (document.querySelector(`script[src="${src}"]`)) return resolve();
+            const s = document.createElement('script'); s.src = src; s.onload = resolve;
+            document.head.appendChild(s);
+        });
+        
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js');
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+
+        const ESTADOS_DB = [
+            {n:"AGUASCALIENTES",a:"AGU"}, {n:"BAJA CALIFORNIA",a:"BC"}, {n:"BAJA CALIFORNIA SUR",a:"BCS"},
+            {n:"CAMPECHE",a:"CAMP"}, {n:"COAHUILA",a:"COAH"}, {n:"COLIMA",a:"COL"}, {n:"CHIAPAS",a:"CHIS"},
+            {n:"CHIHUAHUA",a:"CHIH"}, {n:"CIUDAD DE MEXICO",a:"CDMX"}, {n:"DISTRITO FEDERAL",a:"CDMX"},
+            {n:"DURANGO",a:"DGO"}, {n:"GUANAJUATO",a:"GTO"}, {n:"GUERRERO",a:"GRO"}, {n:"HIDALGO",a:"HGO"},
+            {n:"JALISCO",a:"JAL"}, {n:"MEXICO",a:"MEX"}, {n:"MICHOACAN",a:"MICH"}, {n:"MORELOS",a:"MOR"},
+            {n:"NAYARIT",a:"NAY"}, {n:"NUEVO LEON",a:"NL"}, {n:"OAXACA",a:"OAX"}, {n:"PUEBLA",a:"PUE"},
+            {n:"QUERETARO",a:"QRO"}, {n:"QUINTANA ROO",a:"QROO"}, {n:"SAN LUIS POTOSI",a:"SLP"},
+            {n:"SINALOA",a:"SIN"}, {n:"SONORA",a:"SON"}, {n:"TABASCO",a:"TAB"}, {n:"TAMAULIPAS",a:"TAM"},
+            {n:"TLAXCALA",a:"TLAX"}, {n:"VERACRUZ",a:"VER"}, {n:"YUCATAN",a:"YUC"}, {n:"ZACATECAS",a:"ZAC"}
+        ];
+
+        // --- OPCIONES ACTUALIZADAS DE ESTATUS ---
+        const OPCIONES_EDICION = {
+            estado_civil: ["SOLTERO", "CASADO", "UNION LIBRE", "DIVORCIADO"],
+            escolaridad: ["SECUNDARIA", "PREPARATORIA", "LICENCIATURA", "LICENCIATURA TRUNCA", "LICENCIATURA EN PROCESO", "MAESTRIA", "DOCTORADO"],
+            perfiles: ["PROVISIONAL", "DEFINITIVA", "WALMART"],
+            medio_reclutamiento: ["OCC", "REDES SOCIALES", "RECOMENDACION", "CONTACTO DIRECTO"],
+            status: [
+                "SIN ASIGNAR",
+                "ENTREVISTA PROGRAMADA",
+                "EXAMEN PROGRAMADO",
+                "SOLICITUD DE DOCUMENTOS",
+                "CREACION DE CONTRATOS",
+                "ENTREVISTA EN SUCURSAL Y APERTURA DE CUENTA DE NOMINA",
+                "TURNADO A VISITA RESIDENCIAL",
+                "PLATAFORMA CARSO Y CURSOS DE CERTIFICACION",
+                "EXAMENES DE CERTIFICACION Y EXPEDIENTE ELECTRONICO",
+                "CREACION DE PLATAFORMA INBURSA Y CORREO INSTITUCIONAL",
+                "SOLICITUD DE TARJETAS DE IDENTIFICACION",
+                "CURSOS COMERCIALES-CAPACITACION INICIAL Y CREACION DE RRSS",
+                "ASESOR VIGENTE"
+            ]
+        };
+
+        const LISTA_DOCUMENTOS = [
+            { id: 'cv_link', label: 'CURRICULUM VITAE (CV)' },
+            { id: 'doc_f390', label: 'F390' },
+            { id: 'doc_com190', label: 'COM-190' },
+            { id: 'doc_com191', label: 'COM-191' },
+            { id: 'doc_com196', label: 'COM-196' },
+            { id: 'doc_carta_interbancaria', label: 'CARTA INTERBANCARIA' },
+            { id: 'doc_ine', label: 'INE' },
+            { id: 'doc_comp_estudios', label: 'COMPROBANTE DE ESTUDIOS' },
+            { id: 'doc_comp_domicilio', label: 'COMPROBANTE DE DOMICILIO' },
+            { id: 'doc_acta_nacimiento', label: 'ACTA DE NACIMIENTO' },
+            { id: 'doc_curp', label: 'CURP' },
+            { id: 'doc_csf', label: 'CSF' },
+            { id: 'doc_carta_gobierno', label: 'CARTA GOBIERNO' },
+            { id: 'doc_nss', label: 'NSS' },
+            { id: 'doc_carta_descuentos', label: 'CARTA DESCUENTOS' },
+            { id: 'doc_siap', label: 'SIAP' },
+            { id: 'doc_codigo_etica', label: 'CODIGO DE ETICA' },
+            { id: 'doc_cedula', label: 'CEDULA O CARTA COMPROMISO' },
+            { id: 'doc_veritas', label: 'VERITAS' },
+            { id: 'doc_carta_bienvenida', label: 'CARTA DE BIENVENIDA' }
+        ];
+
+        let allCandidates = [];
+        let currentCandidateId = null;
+
+        async function init() {
+            await fetchCandidates();
+            setupFilterListeners();
+            renderList();
+        }
+
+        async function fetchCandidates() {
+            const { data, error } = await supabase.from('candidates').select('*').order('created_at', { ascending: false });
+            if (error) { console.error(error); return; }
+
+            allCandidates = data.map(c => {
+                const dateObj = c.fecha_cita_sucursal ? new Date(c.fecha_cita_sucursal + 'T00:00:00') : null;
+                let quarterLabel = "SIN FECHA";
+                if(c.trimestre_reclutamiento) {
+                    quarterLabel = c.trimestre_reclutamiento;
+                } else if (dateObj && !isNaN(dateObj)) {
+                    const q = Math.floor(dateObj.getMonth() / 3) + 1;
+                    quarterLabel = `${dateObj.getFullYear()} TRIM ${q}`;
+                }
+                return { 
+                    ...c, _quarter: quarterLabel,
+                    full_name: (c.full_name || '').toUpperCase(),
+                    plaza: (c.plaza || '').toUpperCase(),
+                    perfil: (c.perfil || '').toUpperCase(),
+                    email: (c.email || '').toUpperCase()
+                };
+            });
+            updateFilterDropdowns();
+        }
+
+        function updateFilterDropdowns() {
+            const currentPlaza = document.getElementById('filterPlaza').value;
+            const currentPerfil = document.getElementById('filterPerfil').value;
+            const currentTrim = document.getElementById('filterTrimestre').value;
+            const uniquePlazas = [...new Set(allCandidates.map(c => c.plaza))].filter(x => x).sort();
+            const uniquePerfiles = [...new Set(allCandidates.map(c => c.perfil))].filter(x => x).sort();
+            const uniqueTrim = [...new Set(allCandidates.map(c => c._quarter))].filter(x => x !== 'SIN FECHA').sort().reverse();
+            if(allCandidates.some(c => c._quarter === 'SIN FECHA')) uniqueTrim.push('SIN FECHA');
+            fillSelect('filterPlaza', uniquePlazas, "TODAS LAS PLAZAS", currentPlaza, true);
+            fillSelect('filterPerfil', uniquePerfiles, "TODOS LOS PERFILES", currentPerfil);
+            fillSelect('filterTrimestre', uniqueTrim, "TODOS LOS TRIMESTRES", currentTrim);
+        }
+
+        function fillSelect(id, opts, def, sel, isPlaza = false) {
+            const el = document.getElementById(id);
+            let html = `<option value="">${def}</option>`;
+            opts.forEach(o => {
+                let label = o;
+                if(isPlaza) {
+                    const found = ESTADOS_DB.find(e => e.a === o);
+                    if(found) label = `${found.a} - ${found.n}`;
+                }
+                html += `<option value="${o}" ${o === sel ? 'selected' : ''}>${label}</option>`;
+            });
+            el.innerHTML = html;
+        }
+
+        function setupFilterListeners() {
+            ['searchInput', 'filterPlaza', 'filterPerfil', 'filterTrimestre'].forEach(id => {
+                document.getElementById(id).addEventListener('input', renderList);
+            });
+        }
+
+        function renderList() {
+            const search = document.getElementById('searchInput').value.toUpperCase();
+            const fPlaza = document.getElementById('filterPlaza').value;
+            const fPerfil = document.getElementById('filterPerfil').value;
+            const fTrim = document.getElementById('filterTrimestre').value;
+            const filtered = allCandidates.filter(c => {
+                const matchSearch = c.full_name.includes(search) || c.email.includes(search) || (c.clave_asesor || '').includes(search);
+                const matchPlaza = !fPlaza || c.plaza === fPlaza;
+                const matchPerfil = !fPerfil || c.perfil === fPerfil;
+                const matchTrim = !fTrim || c._quarter === fTrim;
+                return matchSearch && matchPlaza && matchPerfil && matchTrim;
+            });
+
+            const container = document.getElementById('candidatesList');
+            container.innerHTML = '';
+            if(filtered.length === 0) { container.innerHTML = '<div style="text-align:center; padding:20px; color:#999; font-size:0.8rem;">SIN RESULTADOS</div>'; return; }
+
+            filtered.forEach(c => {
+                const isActive = currentCandidateId === c.id ? 'active' : '';
+                const clave = c.clave_asesor || 'S/C';
+                const st = ESTADOS_DB.find(e => e.a === c.plaza);
+                const plazaLabel = st ? st.n : (c.plaza || '--');
+                const html = `
+                    <div class="candidate-card ${isActive}" onclick="window.selectCandidate('${c.id}')">
+                        <div class="c-clave">${clave}</div>
+                        <div class="c-name">${c.full_name}</div>
+                        <div class="c-details-grid">
+                            <div class="c-meta"><i class="ph-bold ph-map-pin"></i> ${plazaLabel}</div>
+                            <div class="c-meta"><i class="ph-bold ph-phone"></i> ${c.phone || '--'}</div>
+                            <div class="c-meta"><i class="ph-bold ph-envelope-simple"></i> ${c.email || '--'}</div>
+                        </div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        window.selectCandidate = (id) => {
+            currentCandidateId = id;
+            renderList();
+            const c = allCandidates.find(x => x.id === id);
+            if (!c) return;
+            const field = (label, key, type='text') => `<div class="field-row"><label class="field-label">${label}</label><div class="field-value">${c[key] || '--'}</div><input type="${type}" class="field-input" data-key="${key}" value="${c[key] || ''}"></div>`;
+            const select = (label, key, options) => {
+                const val = (c[key] || '').toUpperCase();
+                const uniqueOpts = [...new Set([val, ...options])].filter(x=>x); 
+                const optsHtml = uniqueOpts.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('');
+                return `<div class="field-row"><label class="field-label">${label}</label><div class="field-value">${val || '--'}</div><select class="field-select" data-key="${key}">${optsHtml}</select></div>`;
+            };
+            const selectPlaza = (label, key) => {
+                const val = (c[key] || '').toUpperCase();
+                let optsHtml = ESTADOS_DB.map(st => `<option value="${st.a}" ${st.a===val?'selected':''}>${st.a} - ${st.n}</option>`).join('');
+                if(val && !ESTADOS_DB.find(e => e.a === val)) optsHtml = `<option value="${val}" selected>${val}</option>` + optsHtml;
+                const found = ESTADOS_DB.find(e => e.a === val);
+                const displayVal = found ? `${found.a} - ${found.n}` : (val || '--');
+                return `<div class="field-row"><label class="field-label">${label}</label><div class="field-value">${displayVal}</div><select class="field-select" data-key="${key}"><option value="">SELECCIONAR...</option>${optsHtml}</select></div>`;
+            };
+            const dateField = (label, key) => {
+                const rawVal = c[key] ? c[key].split('T')[0] : '';
+                return `<div class="field-row"><label class="field-label">${label}</label><div class="field-value">${rawVal || '--'}</div><input type="date" class="field-input" data-key="${key}" value="${rawVal}"></div>`;
+            };
+
+            const container = document.getElementById('detailContainer');
+            const stHeader = ESTADOS_DB.find(e => e.a === c.plaza);
+            const plazaHeader = stHeader ? stHeader.n : (c.plaza || 'SIN PLAZA');
+
+            container.innerHTML = `
+                <div class="detail-hero">
+                    <div class="hero-info">
+                        <h1>${c.full_name}</h1>
+                        <div class="hero-badges">
+                            <span class="hero-badge"><i class="ph-fill ph-identification-badge"></i> ${c.clave_asesor || 'S/C'}</span>
+                            <span class="hero-badge"><i class="ph-fill ph-map-pin"></i> ${plazaHeader}</span>
+                            <span class="hero-badge"><i class="ph-fill ph-briefcase"></i> ${c.perfil || 'SIN PERFIL'}</span>
+                            <span class="hero-badge" style="background:white; color:#0061A9;">${c._quarter}</span>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn-action btn-edit" onclick="toggleEdit(true)"><i class="ph-bold ph-pencil-simple"></i> EDITAR</button>
+                        <button class="btn-action btn-cancel" onclick="toggleEdit(false)"><i class="ph-bold ph-x"></i> CANCELAR</button>
+                        <button class="btn-action btn-save" onclick="saveData()"><i class="ph-bold ph-floppy-disk"></i> GUARDAR</button>
+                    </div>
+                </div>
+                <div class="detail-content">
+                    <div class="info-card card-professional"><div class="card-header"><i class="ph-duotone ph-briefcase"></i> <h3>PERFIL INBURSA</h3></div>
+                        ${field('CLAVE ASESOR', 'clave_asesor')}
+                        ${selectPlaza('PLAZA (ESTADO)', 'plaza')}
+                        ${select('PERFIL / ROL', 'perfil', OPCIONES_EDICION.perfiles)}
+                        ${select('STATUS ACTUAL', 'status', OPCIONES_EDICION.status)}
+                    </div>
+                    <div class="info-card card-personal"><div class="card-header"><i class="ph-duotone ph-user"></i> <h3>DATOS PERSONALES</h3></div>
+                        ${field('NOMBRE COMPLETO', 'full_name')}
+                        ${field('EDAD', 'age', 'number')}
+                        ${select('ESTADO CIVIL', 'marital_status', OPCIONES_EDICION.estado_civil)}
+                        ${field('CURP', 'curp')}
+                        ${field('RFC', 'rfc')}
+                        <div class="field-row"><label class="field-label">TIENE HIJOS</label><div class="field-value">${c.tiene_hijos ? 'SI' : 'NO'}</div><select class="field-select" data-key="tiene_hijos"><option value="true" ${c.tiene_hijos ? 'selected':''}>SI</option><option value="false" ${!c.tiene_hijos ? 'selected':''}>NO</option></select></div>
+                    </div>
+                    <div class="info-card card-dates"><div class="card-header"><i class="ph-duotone ph-calendar-check"></i> <h3>CRONOLOGÍA Y FECHAS</h3></div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            ${dateField('FECHA REGISTRO', 'created_at')}
+                            ${dateField('FECHA POSTULACIÓN', 'date')}
+                            ${dateField('FECHA NACIMIENTO', 'birth_date')}
+                            ${dateField('FECHA CITA SUCURSAL', 'fecha_cita_sucursal')}
+                            ${dateField('FECHA ENTREVISTA', 'interview_date')}
+                            ${dateField('FECHA EXAMEN', 'fecha_examen')}
+                            ${dateField('FECHA CERTIFICACIÓN', 'fecha_certificacion')}
+                        </div>
+                    </div>
+                    <div class="info-card card-contact"><div class="card-header"><i class="ph-duotone ph-address-book"></i> <h3>CONTACTO Y OTROS</h3></div>
+                        ${field('TELÉFONO', 'phone', 'tel')}
+                        ${field('CORREO ELECTRÓNICO', 'email', 'email')}
+                        
+                        ${(c.email && c.status === 'SOLICITUD DE DOCUMENTOS') ? `<button class="btn-gmail" onclick="sendWelcomeEmail('${c.email}')"><i class="ph-logo ph-google-logo"></i> ENVIAR SOLICITUD DOCS (GMAIL)</button>` : ''}
+                        
+                        <div style="margin-top:15px;"></div>
+                        ${field('CIUDAD', 'city')}
+                        ${field('ESTADO', 'state')}
+                        ${select('NIVEL ESTUDIOS', 'education', OPCIONES_EDICION.escolaridad)}
+                        ${select('MEDIO RECLUTAMIENTO', 'medio_reclutamiento', OPCIONES_EDICION.medio_reclutamiento)}
+                    </div>
+                    <div class="info-card" style="grid-column: 1 / -1; border-top-color: #64748b;"><div class="card-header"><i class="ph-duotone ph-clipboard-text"></i> <h3>GESTIÓN INTERNA</h3></div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                            ${field('SUEÑO A REALIZAR', 'sueno_realizar')}
+                            ${field('ÁREA DE OPORTUNIDAD', 'area_oportunidad')}
+                            <div style="grid-column: 1/-1;"><label class="field-label">COMENTARIOS ENTREVISTA</label><div class="field-value" style="white-space: pre-wrap;">${c.comentarios_entrevista || '--'}</div><textarea class="field-input" data-key="comentarios_entrevista" rows="3">${c.comentarios_entrevista || ''}</textarea></div>
+                        </div>
+                    </div>
+                    <div class="info-card card-docs" style="grid-column: 1 / -1;">
+                        <div class="card-header"><i class="ph-duotone ph-folder-notch"></i> <h3>EXPEDIENTE DIGITAL</h3></div>
+                        <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">Gestione el expediente completo (CV y 19 documentos) o genere reportes.</p>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <button class="btn-zip" style="background:#0061A9;" onclick="openDocsModal()">
+                                <i class="ph-bold ph-files"></i> GESTIONAR EXPEDIENTE
+                            </button>
+                            <button class="btn-pdf" onclick="generatePDF()">
+                                <i class="ph-bold ph-file-pdf"></i> GENERAR REPORTE PDF (A4)
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        };
+
+        window.toggleEdit = (show) => { const el = document.getElementById('detailContainer'); if(show) el.classList.add('editing'); else { el.classList.remove('editing'); selectCandidate(currentCandidateId); } };
+        window.saveData = async () => {
+            const container = document.getElementById('detailContainer');
+            const inputs = container.querySelectorAll('.field-input, .field-select');
+            const updates = {};
+            inputs.forEach(inp => { const key = inp.getAttribute('data-key'); let val = inp.value.toUpperCase(); if(inp.type === 'number') val = val ? parseInt(val) : null; if(inp.tagName === 'SELECT' && (val === 'TRUE' || val === 'FALSE')) val = (val === 'TRUE'); if(val === "") val = null; updates[key] = val; });
+            
+            // CALCULAR TRIMESTRE
+            const fechaCita = updates['fecha_cita_sucursal'];
+            if(fechaCita) {
+                 const d = new Date(fechaCita + 'T00:00:00');
+                 if(!isNaN(d)) {
+                     const q = Math.floor(d.getMonth() / 3) + 1;
+                     updates['trimestre_reclutamiento'] = `${d.getFullYear()} TRIM ${q}`;
+                 }
+            }
+
+            const btn = container.querySelector('.btn-save');
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i>';
+            try { const { error } = await supabase.from('candidates').update(updates).eq('id', currentCandidateId); if(error) throw error; await fetchCandidates(); selectCandidate(currentCandidateId); } catch (err) { alert("Error: " + err.message); btn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> GUARDAR'; }
+        };
+
+        // --- ENVIAR CORREO GMAIL (WEB LINK DIRECTO) ---
+        window.sendWelcomeEmail = (email) => {
+            if(!email || email === '--') return alert("El asesor no tiene email registrado.");
+            
+            const subject = encodeURIComponent("Proceso de Contratación Inbursa - Documentación Requerida");
+            const bodyText = `Hola buenas tardes Felicidades por haber pasado el examen satisfactoriamente, entonces comenzamos con el proceso de contrtacion y documentacion, puedes ayudarme con la siguiente documentacion por favor, todo en un unico pdf, de manera legible,sin que los documentos salgan cortados o borrosos, los documentos requeridos son los siguientes:
+-ACTA DE NACIMIENTO
+-COMPROBANTE DE COMICILIO
+-INE POR AMBOS LADOS
+-NSS
+-CONSTANCIA FISCAL
+
+Y ESTE DOCUMENTO YA SEA QUE LO LLNES DESDE TU COMPUTADORA o lo imprimas lo llenes y me envies la fotografia:
+https://pavpbtfucesbjapaycsk.supabase.co/storage/v1/object/public/files/ARCHIVOS%20FIJOS/F-390.pdf`;
+
+            const body = encodeURIComponent(bodyText);
+            
+            // FORZAR APERTURA EN GMAIL WEB EN PESTAÑA NUEVA
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+            window.open(gmailUrl, '_blank');
+        };
+
+        // --- PDF GENERATION ---
+        window.generatePDF = () => {
+            const c = allCandidates.find(x => x.id === currentCandidateId);
+            if(!c) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const BLUE = "#0061A9"; const GRAY = "#64748b"; const BLACK = "#1e293b";
+
+            doc.setFillColor(BLUE); doc.rect(0, 0, 210, 20, 'F');
+            doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255); doc.setFontSize(16);
+            doc.text(`EXPEDIENTE: ${c.full_name}`, 10, 13);
+            doc.setFontSize(10); doc.text(`${c.plaza} | ${c.perfil}`, 200, 13, { align: 'right' });
+
+            let y = 35;
+            const drawSection = (title, fields) => {
+                if(y > 270) { doc.addPage(); y = 20; }
+                doc.setFont("helvetica", "bold"); doc.setTextColor(BLUE); doc.setFontSize(12);
+                doc.text(title, 10, y); doc.setDrawColor(200, 200, 200); doc.line(10, y+2, 200, y+2); y += 10;
+                doc.setFontSize(9);
+                fields.forEach(f => {
+                    if(y > 280) { doc.addPage(); y = 20; }
+                    doc.setFont("helvetica", "bold"); doc.setTextColor(GRAY); doc.text(f.label, 10, y);
+                    doc.setFont("helvetica", "normal"); doc.setTextColor(BLACK); doc.text(f.val ? String(f.val) : '--', 70, y); y += 7;
+                });
+                y += 5;
+            };
+
+            drawSection("1. PERFIL INBURSA", [ { label: "CLAVE ASESOR", val: c.clave_asesor }, { label: "PLAZA", val: c.plaza }, { label: "ROL", val: c.perfil }, { label: "STATUS", val: c.status }, { label: "TRIMESTRE", val: c._quarter } ]);
+            drawSection("2. DATOS PERSONALES", [ { label: "EMAIL", val: c.email }, { label: "TELÉFONO", val: c.phone }, { label: "CURP", val: c.curp }, { label: "RFC", val: c.rfc }, { label: "ESTADO CIVIL", val: c.marital_status }, { label: "EDAD", val: c.age } ]);
+            drawSection("3. UBICACIÓN Y ESTUDIOS", [ { label: "CIUDAD", val: c.city }, { label: "ESTADO RESIDENCIA", val: c.state }, { label: "ESTUDIOS", val: c.education }, { label: "MEDIO RECLUTAMIENTO", val: c.medio_reclutamiento } ]);
+            drawSection("4. FECHAS CLAVE", [ { label: "REGISTRO EN SISTEMA", val: c.created_at ? c.created_at.split('T')[0] : '--' }, { label: "CITA SUCURSAL", val: c.fecha_cita_sucursal ? c.fecha_cita_sucursal.split('T')[0] : '--' }, { label: "FECHA ENTREVISTA", val: c.interview_date ? c.interview_date.split('T')[0] : '--' }, { label: "FECHA EXAMEN", val: c.fecha_examen ? c.fecha_examen.split('T')[0] : '--' } ]);
+
+            if(y > 250) { doc.addPage(); y = 20; }
+            doc.setFont("helvetica", "bold"); doc.setTextColor(BLUE); doc.setFontSize(12);
+            doc.text("5. DOCUMENTOS DIGITALIZADOS", 10, y); doc.line(10, y+2, 200, y+2); y += 10;
+            doc.setFontSize(9);
+            LISTA_DOCUMENTOS.forEach(d => {
+                if(c[d.id]) {
+                    if(y > 280) { doc.addPage(); y = 20; }
+                    doc.setTextColor(BLACK); doc.text(`• ${d.label}`, 10, y);
+                    doc.setTextColor(0, 0, 255); doc.textWithLink("VER DOCUMENTO", 150, y, { url: c[d.id] }); y += 7;
+                }
+            });
+            doc.save(`REPORTE_${c.full_name.replace(/\s+/g, '_').toUpperCase()}.pdf`);
+        };
+
+        // --- ZIP MASIVO ---
+        window.downloadAllDocsZip = async () => {
+            const c = allCandidates.find(x => x.id === currentCandidateId);
+            if(!c) return;
+            const btn = document.querySelector('.btn-download-all');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> COMPRIMIENDO...';
+            btn.disabled = true;
+            try {
+                const zip = new JSZip();
+                const folderName = `Expediente_${c.full_name.replace(/\s+/g, '_').toUpperCase()}`;
+                const folder = zip.folder(folderName);
+                let count = 0;
+                const promises = LISTA_DOCUMENTOS.map(async (doc) => {
+                    const url = c[doc.id]; if (!url) return;
+                    try {
+                        const response = await fetch(url, { mode: 'cors' });
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            let ext = "pdf"; if(blob.type.includes("image/jpeg")) ext = "jpg"; if(blob.type.includes("image/png")) ext = "png";
+                            folder.file(`${doc.label}.${ext}`, blob); count++;
+                        } else { folder.file(`${doc.label}_LINK.txt`, url); count++; }
+                    } catch (e) { folder.file(`${doc.label}_LINK.txt`, url); count++; }
+                });
+                await Promise.all(promises);
+                if (count === 0) alert("No hay documentos.");
+                else { const content = await zip.generateAsync({type:"blob"}); saveAs(content, `${folderName}.zip`); }
+            } catch (err) { alert("Error ZIP: " + err.message); } finally { btn.disabled = false; btn.innerHTML = originalContent; }
+        };
+
+        // --- GESTIÓN ARCHIVOS ---
+        window.openDocsModal = () => {
+            const c = allCandidates.find(x => x.id === currentCandidateId);
+            if(!c) return;
+            document.getElementById('modalDocsTitle').innerText = `EXPEDIENTE: ${c.full_name}`;
+            const grid = document.getElementById('docsGridContainer');
+            grid.innerHTML = '';
+            LISTA_DOCUMENTOS.forEach(doc => {
+                const fileUrl = c[doc.id];
+                const isUploaded = !!fileUrl;
+                const cardHtml = `
+                    <div class="doc-slot ${isUploaded ? 'uploaded' : ''}" id="slot-${doc.id}">
+                        <div><div class="slot-icon"><i class="ph-fill ${isUploaded ? 'ph-file-pdf' : 'ph-upload-simple'}"></i></div><div class="slot-title">${doc.label}</div></div>
+                        <div class="actions-row">
+                            ${isUploaded 
+                                ? `<a href="${fileUrl}" target="_blank" class="btn-view-sm"><i class="ph-bold ph-eye"></i> VER</a>
+                                   <button onclick="deleteFile('${doc.id}')" class="btn-delete-sm" title="Eliminar"><i class="ph-bold ph-trash"></i></button>`
+                                : `<button onclick="document.getElementById('input-${doc.id}').click()" class="btn-upload-sm"><i class="ph-bold ph-upload"></i> SUBIR</button>`
+                            }
+                            <input type="file" id="input-${doc.id}" class="upload-input" accept=".pdf,.png,.jpg,.jpeg" onchange="uploadFile('${doc.id}', this)">
+                        </div>
+                    </div>`;
+                grid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+            document.getElementById('docsModal').classList.add('active');
+        };
+
+        window.closeDocsModal = () => { document.getElementById('docsModal').classList.remove('active'); };
+
+        window.uploadFile = async (columnId, input) => {
+            const file = input.files[0]; if(!file) return;
+            const c = allCandidates.find(x => x.id === currentCandidateId);
+            const slot = document.getElementById(`slot-${columnId}`);
+            const originalHtml = slot.innerHTML;
+            slot.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#0061A9;"><i class="ph ph-spinner ph-spin" style="font-size:2rem;"></i></div>';
+            try {
+                const ext = file.name.split('.').pop();
+                const fileName = `${currentCandidateId}/${columnId}_${Date.now()}.${ext}`;
+                const { error: uploadError } = await supabase.storage.from('expedientes_candidatos').upload(fileName, file, { cacheControl: '3600', upsert: true });
+                if (uploadError) throw uploadError;
+                const { data: publicData } = supabase.storage.from('expedientes_candidatos').getPublicUrl(fileName);
+                const { error: dbError } = await supabase.from('candidates').update({ [columnId]: publicData.publicUrl }).eq('id', currentCandidateId);
+                if (dbError) throw dbError;
+                await fetchCandidates(); openDocsModal();
+            } catch (err) { console.error(err); alert("Error: " + err.message); slot.innerHTML = originalHtml; }
+        };
+
+        window.deleteFile = async (columnId) => {
+            if(!confirm("¿Eliminar archivo permanentemente?")) return;
+            const c = allCandidates.find(x => x.id === currentCandidateId);
+            const slot = document.getElementById(`slot-${columnId}`);
+            const originalHtml = slot.innerHTML;
+            slot.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;"><i class="ph ph-spinner ph-spin" style="font-size:2rem;"></i></div>';
+            try {
+                const url = c[columnId];
+                if(url.includes("expedientes_candidatos")) {
+                    const path = url.split("expedientes_candidatos/")[1];
+                    if(path) await supabase.storage.from('expedientes_candidatos').remove([path]);
+                }
+                const { error } = await supabase.from('candidates').update({ [columnId]: null }).eq('id', currentCandidateId);
+                if(error) throw error;
+                await fetchCandidates(); openDocsModal();
+            } catch (err) { console.error(err); alert("Error: " + err.message); slot.innerHTML = originalHtml; }
+        };
+
+        init();
+    })();
+    </script>
+</div>

@@ -1,0 +1,581 @@
+<style>
+    /* --- ESTILOS GENERALES (TEMA CLARO) --- */
+    .kanban-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        font-family: 'Inter', sans-serif;
+        color: #1e293b;
+        overflow: hidden;
+    }
+
+    /* TABLERO KANBAN */
+    .kanban-board {
+        display: flex;
+        gap: 20px;
+        height: 100%;
+        overflow-x: auto;
+        align-items: flex-start;
+        padding-bottom: 10px;
+    }
+
+    /* COLUMNAS */
+    .column {
+        flex: 1;
+        min-width: 340px;
+        max-width: 420px;
+        height: 100%;
+        background: #f8fafc; /* Gris muy claro */
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Bordes superiores */
+    .col-nueva { border-top: 5px solid #3b82f6; }
+    .col-proceso { border-top: 5px solid #f59e0b; }
+    .col-emitida { border-top: 5px solid #10b981; }
+
+    /* Lógica Colapsable */
+    .column.collapsed { min-width: 50px; max-width: 50px; background: #e2e8f0; cursor: pointer; }
+    .column.collapsed .task-list, .column.collapsed .btn-registrar, .column.collapsed .col-title span, .column.collapsed .badge-sum { display: none; }
+    .column.collapsed .column-header { justify-content: center; writing-mode: vertical-rl; height: 100%; padding: 0; }
+    .column.collapsed .ph-caret-right { transform: rotate(180deg); margin-top: 10px; }
+
+    .column-header {
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        min-height: 55px;
+        background: #ffffff;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .col-title { 
+        font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px; 
+        text-transform: uppercase; display: flex; align-items: center; gap: 8px; 
+        color: #475569; 
+    }
+
+    /* Badge de Sumatoria (Dinero) */
+    .badge-sum {
+        font-size: 0.8rem;
+        background: #e2e8f0;
+        color: #334155;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-registrar {
+        background: var(--primary); color: white; border: none; padding: 6px 12px;
+        border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+        display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+    .btn-registrar:hover { filter: brightness(1.1); }
+
+    /* Lista Tareas */
+    .task-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #f1f5f9;
+    }
+    .task-list::-webkit-scrollbar { width: 6px; }
+    .task-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* --- TARJETA --- */
+    .card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        position: relative;
+        transition: 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
+    .card.dragging { opacity: 0.6; border: 2px dashed var(--primary); background: #eff6ff; }
+
+    .c-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .c-name { font-size: 0.95rem; font-weight: 700; color: #0f172a; line-height: 1.3; }
+    .c-amount { font-size: 1.1rem; font-weight: 800; color: #059669; margin: 4px 0; }
+    .c-row { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; color: #64748b; }
+    .c-row i { color: #94a3b8; font-size: 1rem; }
+
+    .badge-pill {
+        font-size: 0.7rem; padding: 3px 8px; border-radius: 12px;
+        background: #f1f5f9; border: 1px solid #e2e8f0;
+        color: #475569; width: fit-content; text-transform: uppercase; font-weight: 700; 
+    }
+
+    /* --- ACCIONES EN TARJETA --- */
+    .card-actions-row {
+        margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .btn-card-action {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
+        text-decoration: none; transition: 0.2s; border: 1px solid transparent;
+    }
+    .btn-wa-card { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+    .btn-wa-card:hover { background: #22c55e; color: white; border-color: #22c55e; }
+    .btn-mail-card { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    .btn-mail-card:hover { background: #ef4444; color: white; border-color: #ef4444; }
+    .btn-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+
+    /* MODAL */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+        z-index: 9999; display: none; justify-content: center; align-items: center;
+    }
+    .detail-card-modal {
+        background: #ffffff; border-radius: 16px; width: 600px; max-width: 95%; height: 90vh;
+        overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex; flex-direction: column; color: #1e293b;
+    }
+    .detail-header {
+        padding: 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+        display: flex; justify-content: space-between; align-items: center;
+        border-radius: 16px 16px 0 0;
+    }
+    .detail-body { padding: 25px; flex: 1; overflow-y: auto; }
+
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; }
+    .form-group input, .form-group select {
+        width: 100%; padding: 12px; background: #ffffff;
+        border: 1px solid #cbd5e1; border-radius: 8px;
+        color: #0f172a; outline: none; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .section-label {
+        color: var(--primary); font-size: 0.8rem; font-weight: 800; letter-spacing: 1px;
+        border-bottom: 2px solid #f1f5f9; padding-bottom: 5px; margin: 25px 0 15px 0;
+    }
+    .btn-save {
+        width: 100%; padding: 15px; background: #0f172a; color: white; border: none;
+        border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 1rem; margin-top: 20px;
+    }
+    .btn-save:hover { background: #334155; }
+    .file-preview {
+        display: flex; align-items: center; gap: 10px; padding: 10px;
+        background: #eff6ff; border: 1px dashed #3b82f6; border-radius: 8px;
+        margin-top: 5px; color: #2563eb; font-size: 0.85rem; text-decoration: none; font-weight: 600;
+    }
+</style>
+
+<div class="kanban-wrapper animate__animated animate__fadeIn">
+    
+    <div class="kanban-board">
+        
+        <div class="column col-nueva" id="Nueva Factura" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="column-header">
+                <div class="col-title">
+                    <i class="ph-fill ph-circle" style="color:#3b82f6;"></i> 
+                    <span>NUEVA</span>
+                </div>
+                <span class="badge-sum" id="sum-nueva">$ 0.00</span>
+                
+                <button class="btn-registrar" onclick="abrirModal()">
+                    <i class="ph-bold ph-plus"></i>
+                </button>
+            </div>
+            <div class="task-list" id="lista-nueva"></div>
+        </div>
+
+        <div class="column col-proceso" id="En Proceso" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="column-header">
+                <div class="col-title">
+                    <i class="ph-fill ph-circle" style="color:#f59e0b;"></i> 
+                    <span>EN PROCESO</span>
+                </div>
+                <span class="badge-sum" id="sum-proceso">$ 0.00</span>
+            </div>
+            <div class="task-list" id="lista-proceso"></div>
+        </div>
+
+        <div class="column col-emitida" id="Emitida" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <div class="column-header" onclick="toggleEmitida()" style="cursor: pointer;">
+                <div class="col-title">
+                    <i class="ph-fill ph-circle" style="color:#10b981;"></i> 
+                    <span>EMITIDA</span>
+                </div>
+                <span class="badge-sum" id="sum-emitida">$ 0.00</span>
+                <i class="ph-bold ph-caret-right" id="icon-collapse" style="color:#64748b; margin-left: 10px;"></i>
+            </div>
+            <div class="task-list" id="lista-emitida"></div>
+        </div>
+
+    </div>
+</div>
+
+<div id="modalFactura" class="modal-overlay">
+    <div class="detail-card-modal animate__animated animate__zoomIn">
+        
+        <div class="detail-header">
+            <h3 style="color:#0f172a; margin:0; display:flex; align-items:center; gap:10px;">
+                <i class="ph-bold ph-receipt" style="color:var(--primary);"></i> <span id="modalTitle">NUEVA COMPRA</span>
+            </h3>
+            <button onclick="cerrarModal()" style="background:none; border:none; color:#94a3b8; cursor:pointer;">
+                <i class="ph-bold ph-x" style="font-size:1.5rem;"></i>
+            </button>
+        </div>
+
+        <div class="detail-body">
+            <form id="formGasto" onsubmit="guardarFactura(event)">
+                <input type="hidden" id="id_factura">
+
+                <div class="form-group">
+                    <label>NOMBRE DEL GASTO</label>
+                    <input type="text" id="nombre_gasto" required placeholder="Ej. Material de Oficina">
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div class="form-group">
+                        <label>MONTO TOTAL</label>
+                        <input type="number" id="monto" step="0.01" required placeholder="$ 0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>FECHA DE COMPRA</label>
+                        <input type="date" id="fecha_compra" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>LUGAR DE COMPRA</label>
+                    <input type="text" id="lugar" placeholder="Establecimiento...">
+                </div>
+
+                <div class="form-group">
+                    <label>TIPO DE FACTURACIÓN</label>
+                    <select id="tipo_facturacion" onchange="toggleInputs()" required>
+                        <option value="EN NEGOCIO">EN NEGOCIO</option>
+                        <option value="PAGINA WEB">PAGINA WEB</option>
+                        <option value="WHATSAPP">WHATSAPP</option>
+                        <option value="CORREO ELECTRONICO">CORREO ELECTRÓNICO</option>
+                    </select>
+                </div>
+
+                <div id="group-whatsapp" class="form-group" style="display:none;">
+                    <label style="color:#25D366;">NÚMERO WHATSAPP PROVEEDOR (10 DÍGITOS)</label>
+                    <input type="text" id="whatsapp_proveedor" placeholder="656XXXXXXX">
+                </div>
+
+                <div id="group-email" class="form-group" style="display:none;">
+                    <label style="color:#ea4335;">CORREO ELECTRÓNICO PROVEEDOR</label>
+                    <input type="email" id="correo_proveedor" placeholder="proveedor@empresa.com">
+                </div>
+
+                <div class="section-label">DATOS FISCALES</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div class="form-group">
+                        <label>RFC (RECEPTOR)</label>
+                        <input type="text" id="rfc" value="GCO0802276B1">
+                    </div>
+                    <div class="form-group">
+                        <label>MI TELÉFONO</label>
+                        <input type="text" id="mi_telefono" value="6563834893">
+                    </div>
+                </div>
+
+                <div class="section-label">ARCHIVOS Y EVIDENCIA</div>
+                
+                <div class="form-group">
+                    <label>FOTO DEL TICKET</label>
+                    <input type="file" id="fileInput" accept="image/*,.pdf" style="margin-bottom:5px;">
+                    <input type="hidden" id="ticket_url_actual">
+                    
+                    <div id="ticketPreviewLink" style="display:none;">
+                        <a href="#" target="_blank" id="linkTicket" class="file-preview">
+                            <i class="ph-bold ph-file-pdf"></i> Ver Ticket Actual
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>CONSTANCIA FISCAL (CSF)</label>
+                    <input type="text" readonly value="CSF.pdf (Enlace Automático)" style="background:#f1f5f9; color:#94a3b8; cursor:not-allowed;">
+                </div>
+
+                <button type="submit" id="btnGuardar" class="btn-save">
+                    GUARDAR CAMBIOS
+                </button>
+
+                <div style="margin-top:15px; text-align:center;">
+                    <button type="button" onclick="eliminarFactura()" id="btnEliminar" style="background:none; border:none; color:#ef4444; font-size:0.8rem; cursor:pointer; display:none;">
+                        <i class="ph-bold ph-trash"></i> Eliminar esta compra
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const supabase = window.supabase;
+        let facturasCache = [];
+        const CSF_URL = "https://pavpbtfucesbjapaycsk.supabase.co/storage/v1/object/public/archivos_facturacion/CSF.pdf";
+
+        // 1. CARGA DE DATOS
+        async function cargarFacturas() {
+            try {
+                const { data, error } = await supabase
+                    .from('facturas')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if(error) throw error;
+                facturasCache = data;
+                renderizarTablero(facturasCache);
+            } catch(e) { console.error(e); }
+        }
+
+        // 2. RENDERIZADO KANBAN Y CÁLCULO DE TOTALES
+        function renderizarTablero(data) {
+            ['lista-nueva', 'lista-proceso', 'lista-emitida'].forEach(id => document.getElementById(id).innerHTML = '');
+            
+            // Variables para sumatoria
+            let sumNueva = 0, sumProceso = 0, sumEmitida = 0;
+
+            const fmt = (n) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+
+            data.forEach(f => {
+                const card = crearTarjeta(f);
+                const monto = parseFloat(f.monto) || 0;
+
+                if(f.status === 'En Proceso') {
+                    document.getElementById('lista-proceso').appendChild(card);
+                    sumProceso += monto;
+                } else if(f.status === 'Emitida') {
+                    document.getElementById('lista-emitida').appendChild(card);
+                    sumEmitida += monto;
+                } else {
+                    document.getElementById('lista-nueva').appendChild(card);
+                    sumNueva += monto;
+                }
+            });
+
+            // Actualizar Cabeceras con los Totales
+            document.getElementById('sum-nueva').innerText = fmt(sumNueva);
+            document.getElementById('sum-proceso').innerText = fmt(sumProceso);
+            document.getElementById('sum-emitida').innerText = fmt(sumEmitida);
+        }
+
+        function crearTarjeta(f) {
+            const div = document.createElement('div');
+            div.className = 'card animate__animated animate__fadeIn';
+            div.draggable = true;
+            div.id = `factura-${f.id}`;
+            
+            div.ondragstart = (ev) => { ev.dataTransfer.setData("text", ev.target.id); ev.target.classList.add('dragging'); };
+            div.ondragend = (ev) => ev.target.classList.remove('dragging');
+            
+            // CLICK: Abre modal
+            div.onclick = (e) => {
+                if(e.target.closest('.btn-card-action')) return; 
+                abrirModal(f);
+            };
+
+            const monto = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(f.monto);
+            const fecha = f.fecha_compra || '---';
+
+            // Links Envío
+            const ticketUrl = f.ticket_url || 'Pendiente de subir';
+            const numProv = f.whatsapp_proveedor ? f.whatsapp_proveedor.replace(/\D/g,'') : '';
+            const mailTo = f.correo_proveedor;
+
+            // Template WA
+            const waBody = `Hola, buen día. Solicito factura del consumo: ${f.nombre_gasto}\n\nRFC: ${f.rfc || 'GCO0802276B1'}\nRazón: GALHER COMUNICACION\nRégimen: 626 - Simplificado de Confianza\nUso CFDI: G03\nCP: 98000\n\nTICKET: ${ticketUrl}\nCSF: ${CSF_URL}`;
+            const waLink = numProv ? `https://wa.me/52${numProv}?text=${encodeURIComponent(waBody)}` : '#';
+            const waClass = numProv ? 'btn-wa-card' : 'btn-disabled';
+
+            // Template Mail
+            const mailBody = `HOLA, BUEN DÍA.\n\nAdjunto información para facturación del consumo: ${f.nombre_gasto}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n DATOS DE FACTURACIÓN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRFC: ${f.rfc || 'GCO0802276B1'}\nRazón Social: GALHER COMUNICACION\nRégimen: 626 - Régimen Simplificado de Confianza\nUso CFDI: G03 - Gastos en general\nCP: 98000\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n ARCHIVOS Y DETALLES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n Fecha Compra: ${fecha}\n Lugar: ${f.lugar || 'No especificado'}\n\n1. TICKET:\n${ticketUrl}\n\n2. CONSTANCIA FISCAL (CSF):\n${CSF_URL}\n\nSaludos.`;
+            const mailLink = mailTo ? `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${mailTo}&su=SOLICITUD FACTURACION&body=${encodeURIComponent(mailBody)}` : '#';
+            const mailClass = mailTo ? 'btn-mail-card' : 'btn-disabled';
+
+            div.innerHTML = `
+                <div class="c-header">
+                    <div class="c-name">${f.nombre_gasto}</div>
+                    <button onclick="event.stopPropagation(); abrirModal(facturasCache.find(x=>x.id==${f.id}))" style="background:none; border:none; cursor:pointer; color:#94a3b8;">
+                        <i class="ph-bold ph-pencil-simple"></i>
+                    </button>
+                </div>
+                <div class="c-amount">${monto}</div>
+                <div class="c-row"><i class="ph-bold ph-calendar"></i> ${fecha}</div>
+                <div class="c-row"><i class="ph-bold ph-map-pin"></i> ${f.lugar || '-'}</div>
+                <div class="badge-pill">${f.tipo_facturacion || 'GENERAL'}</div>
+                
+                <div class="card-actions-row">
+                    <a href="${waLink}" target="_blank" class="btn-card-action ${waClass}" onclick="event.stopPropagation()">
+                        <i class="ph-logo ph-whatsapp-logo" style="font-size:1rem;"></i> WHATSAPP
+                    </a>
+                    <a href="${mailLink}" target="_blank" class="btn-card-action ${mailClass}" onclick="event.stopPropagation()">
+                        <i class="ph-logo ph-gmail-logo" style="font-size:1rem;"></i> GMAIL
+                    </a>
+                </div>
+            `;
+            return div;
+        }
+
+        // 3. LOGICA MODAL
+        window.abrirModal = (f = null) => {
+            document.getElementById('modalFactura').style.display = 'flex';
+            document.getElementById('formGasto').reset();
+            
+            document.getElementById('ticketPreviewLink').style.display = 'none';
+            document.getElementById('btnEliminar').style.display = 'none';
+            
+            document.getElementById('rfc').value = 'GCO0802276B1';
+            document.getElementById('mi_telefono').value = '6563834893';
+
+            if(f) {
+                // EDICIÓN
+                document.getElementById('modalTitle').innerText = "DETALLE DE TARJETA";
+                document.getElementById('id_factura').value = f.id;
+                document.getElementById('nombre_gasto').value = f.nombre_gasto;
+                document.getElementById('monto').value = f.monto;
+                document.getElementById('fecha_compra').value = f.fecha_compra;
+                document.getElementById('lugar').value = f.lugar || '';
+                document.getElementById('tipo_facturacion').value = f.tipo_facturacion || 'EN NEGOCIO';
+                
+                document.getElementById('whatsapp_proveedor').value = f.whatsapp_proveedor || '';
+                document.getElementById('correo_proveedor').value = f.correo_proveedor || '';
+                document.getElementById('rfc').value = f.rfc || 'GCO0802276B1';
+
+                document.getElementById('ticket_url_actual').value = f.ticket_url || '';
+                if(f.ticket_url) {
+                    document.getElementById('ticketPreviewLink').style.display = 'block';
+                    document.getElementById('linkTicket').href = f.ticket_url;
+                }
+
+                // LOGICA DE SEGURIDAD PARA ELIMINAR
+                if(f.status === 'Emitida') {
+                    document.getElementById('btnEliminar').style.display = 'inline-block';
+                }
+
+            } else {
+                // NUEVA
+                document.getElementById('modalTitle').innerText = "NUEVA COMPRA";
+                document.getElementById('id_factura').value = "";
+            }
+            toggleInputs();
+        };
+
+        window.cerrarModal = () => document.getElementById('modalFactura').style.display = 'none';
+
+        window.toggleInputs = () => {
+            const tipo = document.getElementById('tipo_facturacion').value;
+            document.getElementById('group-whatsapp').style.display = (tipo === 'WHATSAPP') ? 'block' : 'none';
+            document.getElementById('group-email').style.display = (tipo === 'CORREO ELECTRONICO') ? 'block' : 'none';
+        };
+
+        // 4. GUARDAR
+        window.guardarFactura = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardar');
+            const originalTxt = btn.innerText;
+            btn.innerText = "GUARDANDO..."; btn.disabled = true;
+
+            try {
+                const id = document.getElementById('id_factura').value;
+                const fileInput = document.getElementById('fileInput');
+                let urlFinal = document.getElementById('ticket_url_actual').value;
+
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const path = `ticket_${Date.now()}.${file.name.split('.').pop()}`;
+                    const { error: upErr } = await supabase.storage.from('archivos_facturacion').upload(path, file);
+                    if(upErr) throw upErr;
+                    const { data: { publicUrl } } = supabase.storage.from('archivos_facturacion').getPublicUrl(path);
+                    urlFinal = publicUrl;
+                }
+
+                const payload = {
+                    nombre_gasto: document.getElementById('nombre_gasto').value.toUpperCase(),
+                    monto: parseFloat(document.getElementById('monto').value),
+                    fecha_compra: document.getElementById('fecha_compra').value,
+                    lugar: document.getElementById('lugar').value.toUpperCase(),
+                    tipo_facturacion: document.getElementById('tipo_facturacion').value,
+                    whatsapp_proveedor: document.getElementById('whatsapp_proveedor').value,
+                    correo_proveedor: document.getElementById('correo_proveedor').value,
+                    rfc: document.getElementById('rfc').value,
+                    ticket_url: urlFinal,
+                    ...( !id && { status: 'Nueva Factura' } )
+                };
+
+                let error;
+                if(id) {
+                    const res = await supabase.from('facturas').update(payload).eq('id', id);
+                    error = res.error;
+                } else {
+                    const res = await supabase.from('facturas').insert([payload]);
+                    error = res.error;
+                }
+
+                if(error) throw error;
+                cerrarModal();
+                cargarFacturas();
+
+            } catch(err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.innerText = originalTxt; btn.disabled = false;
+            }
+        };
+
+        window.eliminarFactura = async () => {
+            if(!confirm("¿Seguro que deseas eliminar este gasto?")) return;
+            const id = document.getElementById('id_factura').value;
+            await supabase.from('facturas').delete().eq('id', id);
+            cerrarModal();
+            cargarFacturas();
+        };
+
+        // UI HELPERS
+        window.toggleEmitida = () => {
+            const col = document.getElementById('Emitida');
+            col.classList.toggle('collapsed');
+            col.querySelector('#icon-collapse').style.transform = col.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        window.allowDrop = (ev) => ev.preventDefault();
+        window.drop = async (ev) => {
+            ev.preventDefault();
+            const idCard = ev.dataTransfer.getData("text");
+            const column = ev.target.closest('.column');
+            if(column) {
+                const idDB = idCard.replace('factura-', '');
+                const nuevoStatus = column.id;
+                column.querySelector('.task-list').prepend(document.getElementById(idCard));
+                await supabase.from('facturas').update({ status: nuevoStatus }).eq('id', idDB);
+                
+                // Recargar para actualizar sumatorias
+                const f = facturasCache.find(x => x.id == idDB);
+                if(f) f.status = nuevoStatus;
+                renderizarTablero(facturasCache); 
+            }
+        };
+
+        cargarFacturas();
+    })();
+</script>

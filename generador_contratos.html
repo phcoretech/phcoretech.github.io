@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SISTEMA MAESTRO | GALHER</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        /* --- VARIABLES BASADAS EN AGENDA GALHER --- */
+        :root {
+            /* Colores de Fondo */
+            --bg-body: #0b1120;
+            --bg-panel: rgba(30, 41, 59, 0.4); /* Efecto vidrio oscuro */
+            --bg-glass-header: rgba(15, 23, 42, 0.85);
+            
+            /* Color Principal (Azul Galher) */
+            --primary: #0066ff;
+            --primary-hover: #0052cc;
+            --primary-glow: rgba(0, 102, 255, 0.5);
+            
+            /* Textos */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Bordes y UI */
+            --border: rgba(255, 255, 255, 0.08);
+            --radius: 12px;
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        
+        body { 
+            margin: 0; 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body);
+            /* Fondo sutil degradado similar a la agenda */
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-body) 60%);
+            color: var(--text-main); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        /* Scrollbars Estilizados */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* --- HEADER --- */
+        header {
+            height: 70px; 
+            background: var(--bg-glass-header); 
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 30px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-shrink: 0;
+            z-index: 50;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .logo { 
+            font-weight: 800; 
+            font-size: 1.3rem;
+            letter-spacing: -0.5px;
+            color: white;
+            display: flex; align-items: center; gap: 12px; 
+            text-shadow: 0 0 20px rgba(0, 102, 255, 0.3);
+        }
+        .logo i { color: var(--primary); font-size: 1.5rem; filter: drop-shadow(0 0 8px var(--primary)); }
+
+        .nav-pills { 
+            background: rgba(0,0,0,0.2); 
+            padding: 4px; 
+            border-radius: 50px; 
+            border: 1px solid var(--border); 
+            display: flex; gap: 4px; 
+        }
+        
+        .nav-btn {
+            background: transparent; border: none; color: var(--text-muted); 
+            padding: 8px 24px; border-radius: 50px; cursor: pointer; 
+            font-weight: 500; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; 
+            transition: all 0.3s ease;
+        }
+        .nav-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        .nav-btn.active { 
+            background: var(--primary); 
+            color: white; 
+            box-shadow: 0 0 15px var(--primary-glow); 
+            font-weight: 600;
+        }
+
+        /* --- LAYOUT --- */
+        .app-body { flex: 1; display: flex; overflow: hidden; position: relative; }
+        .view-section { display: none; width: 100%; height: 100%; }
+        .view-section.active { display: flex; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- SIDEBAR (Glass Panel) --- */
+        .sidebar { 
+            width: 340px; 
+            min-width: 340px; 
+            background: var(--bg-panel); 
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; 
+            padding: 25px; 
+            overflow-y: auto; 
+            z-index: 20; 
+        }
+        
+        .sidebar h2 { 
+            font-size: 0.75rem; letter-spacing: 1.2px; font-weight: 700;
+            text-transform: uppercase; color: var(--text-muted); 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 12px; margin: 25px 0 15px 0; 
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar h2:first-child { margin-top: 0; }
+        .sidebar h2 i { color: var(--primary); }
+
+        /* --- INPUTS --- */
+        label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: block; font-weight: 500; }
+        
+        input[type="text"], input[type="number"], select { 
+            width: 100%; padding: 12px 16px; 
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid var(--border); 
+            color: white; border-radius: 8px; 
+            font-size: 0.9rem; margin-bottom: 12px;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        input:focus, select:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 2px var(--primary-glow); 
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        /* --- BUTTONS --- */
+        .btn { 
+            width: 100%; padding: 12px; border-radius: 8px; border: none; 
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; margin-top: 10px; 
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            transition: all 0.2s; letter-spacing: 0.3px;
+        }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary { 
+            background: var(--primary); 
+            color: white; 
+            box-shadow: 0 4px 15px var(--primary-glow); 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-primary:hover { 
+            background: var(--primary-hover); 
+            box-shadow: 0 6px 20px var(--primary-glow); 
+        }
+
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.05); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+        .btn-success { background: #10b981; color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .btn-success:hover { background: #059669; }
+        
+        .btn-zip { background: #8b5cf6; color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
+        .btn-zip:hover { background: #7c3aed; }
+
+        .btn-outline { 
+            background: transparent; border: 1px dashed var(--text-muted); color: var(--text-muted); 
+        }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(0, 102, 255, 0.05); }
+
+        .btn-icon { 
+            width: 32px; height: 32px; border-radius: 6px; border: none; 
+            background: rgba(255,255,255,0.05); color: var(--text-muted); 
+            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+            transition: 0.2s; font-size: 1rem;
+        }
+        .btn-icon:hover { background: var(--primary); color: white; }
+        .btn-icon.danger:hover { background: #ef4444; color: white; }
+
+        /* --- WORKSPACE --- */
+        .workspace { 
+            flex: 1; 
+            background-color: #0b1120;
+            /* Grid muy sutil */
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative; 
+            display: flex; flex-direction: column; overflow: hidden; 
+        }
+        
+        .canvas-container { 
+            background: white; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+            position: relative; 
+            border-radius: 2px;
+        }
+
+        .scroll-area { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 60px; }
+
+        /* Etiquetas */
+        .draggable-field { 
+            position: absolute; 
+            background: var(--primary); 
+            color: white; padding: 6px 12px; 
+            font-size: 11px; font-weight: 600; border-radius: 4px; 
+            cursor: move; border: 1px solid rgba(255,255,255,0.3); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            white-space: nowrap; user-select: none; z-index: 100;
+        }
+        .draggable-field:hover { transform: scale(1.05); z-index: 110; background: var(--primary-hover); }
+
+        /* --- LISTAS Y CARDS (Estilo Agenda) --- */
+        .list-item { 
+            background: rgba(30, 41, 59, 0.4); 
+            padding: 14px; margin-bottom: 8px; border-radius: 8px; 
+            border: 1px solid var(--border); 
+            font-size: 0.9rem; display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.2s; cursor: pointer;
+        }
+        .list-item:hover { 
+            background: rgba(30, 41, 59, 0.8); 
+            border-color: var(--primary); 
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .list-item-text { display: flex; align-items: center; gap: 10px; color: #e2e8f0; flex: 1; font-weight: 500; }
+        .list-item-text i { color: var(--primary); font-size: 1.1rem; }
+
+        .palette-item { 
+            background: rgba(255,255,255,0.03); padding: 10px; margin-bottom: 6px; 
+            border-radius: 6px; border: 1px solid var(--border); 
+            cursor: grab; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; 
+            transition: 0.2s; 
+        }
+        .palette-item:hover { border-color: var(--primary); color: white; background: rgba(0, 102, 255, 0.1); }
+        .palette-item i { color: var(--text-muted); }
+        .palette-item:hover i { color: var(--primary); }
+
+        /* --- TABLAS --- */
+        .data-table-container { width: 100%; height: 100%; overflow: auto; padding: 0; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; color: #cbd5e1; }
+        
+        th { 
+            text-align: left; padding: 16px; 
+            background: #111827; /* Más oscuro para header */
+            position: sticky; top: 0; 
+            border-bottom: 2px solid var(--primary); 
+            color: var(--primary); font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
+            z-index: 10; 
+        }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); background: rgba(15,23,42,0.6); }
+        tr:hover td { background: rgba(30,41,59,0.9); color: white; }
+
+        /* --- PANELES CONFIG --- */
+        .config-grid { 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; 
+            background: rgba(0,0,0,0.2); padding: 15px; border-radius: var(--radius); 
+            border: 1px solid var(--border); margin-bottom: 20px; 
+        }
+        
+        .floating-controls {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(12px);
+            padding: 8px 20px; border-radius: 50px; display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid var(--border); z-index: 50;
+        }
+        .ctrl-btn { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 1.2rem; transition: 0.2s; display: flex; }
+        .ctrl-btn:hover { color: var(--primary); transform: scale(1.2); text-shadow: 0 0 10px var(--primary); }
+
+        /* --- MODAL --- */
+        #manualEntryModal { backdrop-filter: blur(8px); background: rgba(0,0,0,0.6); }
+        .manual-form-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            background: #1e293b; padding: 30px; border-radius: 16px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid var(--border);
+        }
+        
+        /* Progreso */
+        .progress-container { width: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 15px; height: 6px; overflow: hidden; display:none; }
+        .progress-bar { width: 0%; height: 100%; background: var(--primary); box-shadow: 0 0 10px var(--primary); transition: width 0.3s ease; }
+        .progress-text { font-size: 0.75rem; color: var(--primary); text-align: center; margin-top: 8px; display:none; font-weight: 600; }
+
+        /* Batch Box */
+        #batchContainer {
+            margin-top:10px; padding:15px; 
+            background: rgba(139, 92, 246, 0.1); 
+            border: 1px solid rgba(139, 92, 246, 0.3); 
+            border-radius: var(--radius); 
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo"><i class="ph-bold ph-files"></i> SISTEMA MAESTRO</div>
+        <div class="nav-pills">
+            <button class="nav-btn active" onclick="switchView('designer')"><i class="ph-bold ph-ruler"></i> DISEÑADOR</button>
+            <button class="nav-btn" onclick="switchView('database')"><i class="ph-bold ph-database"></i> DATOS</button>
+            <button class="nav-btn" onclick="switchView('generator')"><i class="ph-bold ph-printer"></i> GENERADOR</button>
+        </div>
+        <div style="width: 140px; display:flex; justify-content:flex-end;">
+            <div style="width:36px; height:36px; background:var(--primary); box-shadow: 0 0 15px var(--primary-glow); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold;">G</div>
+        </div>
+    </header>
+
+    <div class="app-body">
+
+        <div id="view-designer" class="view-section active">
+            <div class="sidebar">
+                <h2><i class="ph-bold ph-file-plus"></i> Nueva Plantilla</h2>
+                <input type="text" id="templateName" placeholder="Nombre (Ej: Contrato Arrendamiento)">
+                <input type="file" id="designerPdfInput" accept="application/pdf" style="display:none" onchange="loadDesignerPDF()">
+                <button class="btn btn-outline" onclick="document.getElementById('designerPdfInput').click()">
+                    <i class="ph-bold ph-upload-simple"></i> Subir PDF Limpio
+                </button>
+                <button class="btn btn-primary" onclick="saveTemplateToDB()">
+                    <i class="ph-bold ph-floppy-disk"></i> Guardar Diseño
+                </button>
+
+                <h2><i class="ph-bold ph-rows"></i> Campos Disponibles</h2>
+                <div id="fieldsPalette" style="max-height: 250px; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
+
+                <h2><i class="ph-bold ph-files"></i> Mis Plantillas</h2>
+                <div id="templatesList" style="flex:1; overflow-y:auto; padding-right:5px;"></div>
+            </div>
+            
+            <div class="workspace">
+                <div class="scroll-area" id="designerScrollArea">
+                    <div class="canvas-container" id="designerCanvasContainer">
+                        <canvas id="designerCanvas"></canvas>
+                        <div id="dragLayer" style="position: absolute; top:0; left:0; width:100%; height:100%;"></div>
+                    </div>
+                </div>
+                <div class="floating-controls">
+                    <button class="ctrl-btn" onclick="changePage(-1)"><i class="ph-bold ph-caret-left"></i></button>
+                    <span id="pageLabel" style="font-size:0.9rem; font-weight:600; color:white; min-width:40px; text-align:center;">1 / 1</span>
+                    <button class="ctrl-btn" onclick="changePage(1)"><i class="ph-bold ph-caret-right"></i></button>
+                    <div style="width:1px; height:20px; background:rgba(255,255,255,0.2);"></div>
+                    <button class="ctrl-btn" onclick="updateZoom(-0.1)"><i class="ph-bold ph-minus"></i></button>
+                    <button class="ctrl-btn" onclick="updateZoom(0.1)"><i class="ph-bold ph-plus"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-database" class="view-section">
+            <div class="sidebar">
+                <h2><i class="ph-bold ph-arrows-clockwise"></i> Gestión de Datos</h2>
+                <button class="btn btn-secondary" onclick="loadDatasets()">
+                    Actualizar Listas
+                </button>
+
+                <h2><i class="ph-bold ph-download-simple"></i> Importar</h2>
+                <input type="text" id="newDatasetName" placeholder="Nombre Lista (Ej: Clientes Enero)">
+                <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="processCSV()">
+                
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" style="margin-top:0" onclick="document.getElementById('csvInput').click()">
+                        <i class="ph-bold ph-file-csv"></i> CSV
+                    </button>
+                    <button class="btn btn-outline" style="margin-top:0" onclick="createEmptyDataset()">
+                        <i class="ph-bold ph-plus"></i> Vacía
+                    </button>
+                </div>
+                
+                <h2><i class="ph-bold ph-list-dashes"></i> Listas Guardadas</h2>
+                <div id="datasetsList" style="flex:1; overflow-y:auto; padding-right:5px;"></div>
+            </div>
+            <div class="workspace" style="display:flex; flex-direction:column;">
+                
+                <div style="padding: 20px 30px; background:rgba(15, 23, 42, 0.6); backdrop-filter: blur(10px); display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+                    <h3 id="tableTitle" style="color:var(--primary); margin:0; font-size:1.1rem; display:flex; align-items:center; gap:10px;">
+                        <i class="ph-fill ph-database"></i> Selecciona una lista...
+                    </h3>
+                    <button class="btn btn-success" style="width:auto; margin:0; padding: 10px 20px;" onclick="openCreateModal()">
+                        <i class="ph-bold ph-user-plus"></i> Nuevo Registro
+                    </button>
+                </div>
+
+                <div class="data-table-container" id="tableWrapper"></div>
+
+                <div id="manualEntryModal" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:200; align-items:center; justify-content:center;">
+                    <div style="width: 650px; max-width:90%;">
+                        <div class="manual-form-grid">
+                            <h2 id="modalTitle" style="grid-column:span 2; text-align:center; color:white; margin-bottom:10px; font-size:1.2rem; border-bottom:1px solid var(--border); padding-bottom:15px;">
+                                Nuevo Registro
+                            </h2>
+                            <div class="full-width"><label>Nombre Completo</label><input type="text" id="m_nombre"></div>
+                            <div><label>Calle y Número</label><input type="text" id="m_calle"></div>
+                            <div><label>Colonia</label><input type="text" id="m_colonia"></div>
+                            <div><label>Ciudad</label><input type="text" id="m_ciudad"></div>
+                            <div><label>Estado</label><input type="text" id="m_estado"></div>
+                            <div><label>C.P.</label><input type="text" id="m_cp"></div>
+                            <div><label>ID Persona</label><input type="text" id="m_id_persona"></div>
+                            <div><label>Fecha Firma</label><input type="text" id="m_fecha"></div>
+                            <div><label>Duración</label><input type="text" id="m_duracion"></div>
+                            <div><label>Sucursal</label><input type="text" id="m_sucursal"></div>
+                            <div><label>Plaza</label><input type="text" id="m_plaza"></div>
+                            
+                            <div style="grid-column:span 2; display:flex; gap:15px; margin-top:20px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.1);">
+                                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                                <button class="btn btn-primary" onclick="saveManualRecord()">Guardar Registro</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-generator" class="view-section">
+            <div class="sidebar">
+                <h2><i class="ph-bold ph-gear"></i> Configuración</h2>
+                <label>Plantilla PDF</label>
+                <select id="genTemplateSelect" onchange="loadGenTemplate()"></select>
+                
+                <label>Origen de Datos</label>
+                <select id="genDatasetSelect" onchange="loadGenDatasetData()">
+                    <option value="">-- Manual (Escribir directo) --</option>
+                </select>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom:5px;">
+                    <h2 style="margin:0"><i class="ph-bold ph-sliders"></i> Personalización</h2>
+                    <div style="display:flex; gap:5px;">
+                         <button class="btn-icon" title="Guardar Estilo" onclick="saveCurrentStyle()"><i class="ph-bold ph-floppy-disk"></i></button>
+                         <button class="btn-icon danger" title="Borrar Estilo" onclick="deleteSavedStyle()"><i class="ph-bold ph-trash"></i></button>
+                    </div>
+                </div>
+                
+                <div class="config-grid" style="margin-bottom:10px;">
+                    <div class="config-item" style="grid-column: span 2;">
+                        <label>Presets Guardados</label>
+                        <select id="savedStylesSelect" onchange="applySavedStyle()" style="margin-bottom:0;">
+                            <option value="">-- Seleccionar --</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <label>Tipografía</label>
+                        <select id="styleFont">
+                            <option value="HelveticaBold">Helvetica Bold</option>
+                            <option value="Helvetica">Helvetica Normal</option>
+                            <option value="TimesRomanBold">Times Bold</option>
+                            <option value="TimesRoman">Times Normal</option>
+                            <option value="CourierBold">Courier Bold</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <label>Tamaño (pt)</label>
+                        <input type="number" id="styleSize" value="9" min="6" max="24">
+                    </div>
+                    <div class="config-item">
+                        <label>Color</label>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="color" id="styleColorPicker" value="#000000" style="width:38px; height:38px; padding:0; border:none; border-radius:8px; cursor:pointer;" onchange="document.getElementById('styleColorHex').value=this.value">
+                            <input type="text" id="styleColorHex" value="#000000" style="margin:0;" onchange="document.getElementById('styleColorPicker').value=this.value">
+                        </div>
+                    </div>
+                    <div class="config-item">
+                        <label>Calibrar (X / Y)</label>
+                         <div style="display:flex; gap:5px;">
+                            <input type="number" id="offsetX" placeholder="X" value="0" style="margin:0">
+                            <input type="number" id="offsetY" placeholder="Y" value="0" style="margin:0">
+                         </div>
+                    </div>
+                </div>
+
+                <div id="batchContainer" style="display:none;">
+                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; text-align:center;">Procesamiento Lote</div>
+                    <button class="btn btn-zip" onclick="generateBatchZIP()">
+                        <i class="ph-bold ph-file-zip"></i> DESCARGAR ZIP COMPLETO
+                    </button>
+                    <div class="progress-container" id="progressBarContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Inicializando...</div>
+                </div>
+
+                <div id="genControls" style="display:none; flex-direction:column; flex:1; margin-top:15px;">
+                    <div id="recordSelectorContainer" style="display:none; margin-bottom:15px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                        <label style="color:var(--primary); font-weight:bold;">Registro Individual</label>
+                        <select id="recordSelect" onchange="fillFormWithRecord()" style="margin-bottom:0;">
+                            <option>Cargando...</option>
+                        </select>
+                    </div>
+
+                    <h2>Vista Previa</h2>
+                    <div id="genInputs" style="flex:1; overflow-y:auto; padding-right:5px;"></div>
+                    
+                    <button class="btn btn-primary" onclick="generatePDF()">
+                        <i class="ph-bold ph-eye"></i> ACTUALIZAR VISTA
+                    </button>
+                </div>
+            </div>
+            <div class="workspace" style="background: #0f172a;">
+                <iframe id="pdfPreview" style="width:100%; height:100%; border:none;"></iframe>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pavpbtfucesbjapaycsk.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdnBidGZ1Y2VzYmphcGF5Y3NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODg1MjksImV4cCI6MjA3OTg2NDUyOX0.Z16gzv5y9CDPzhQZKKTVr8UL49bW8y88LZ8Pbq_9ZhQ';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const STANDARD_FIELDS = ['NOMBRE', 'CALLE Y NUMERO', 'COLONIA', 'CP', 'CIUDAD', 'ESTADO', 'FECHA DE FIRMA', 'DURACION', 'ID PERSONA', 'SUCURSAL', 'PLAZA'];
+        
+        let pdfDoc=null, fileBytes=null, scale=1, zoom=1, currentPage=1;
+        let activeTemplate=null, loadedRecords=[], currentDatasetId=null, currentTableData=[], editingRecordId=null;
+
+        window.onload = () => { initPalette(); loadTemplatesList(); loadDatasets(); loadSavedStyles(); };
+        function switchView(v) { document.querySelectorAll('.view-section').forEach(el=>el.classList.remove('active')); document.getElementById(`view-${v}`).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); event.currentTarget.classList.add('active'); }
+        function hexToRgb(hex){ var result=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return result?{r:parseInt(result[1],16)/255,g:parseInt(result[2],16)/255,b:parseInt(result[3],16)/255}:{r:0,g:0,b:0}; }
+
+        // --- DISEÑADOR ---
+        function initPalette(){ const p=document.getElementById('fieldsPalette'); p.innerHTML=''; STANDARD_FIELDS.forEach(f=>{ const d=document.createElement('div'); d.className='palette-item'; d.innerHTML=`<i class="ph-bold ph-tag"></i> ${f}`; d.onclick=()=>spawnLabel(f); p.appendChild(d); }); const c=document.createElement('div'); c.className='palette-item'; c.style.borderStyle='dashed'; c.innerHTML=`<i class="ph-bold ph-plus"></i> PERSONALIZADO...`; c.onclick=()=>{const n=prompt("Nombre:");if(n)spawnLabel(n.toUpperCase());}; p.appendChild(c); }
+        async function loadDesignerPDF(){ const f=document.getElementById('designerPdfInput').files[0]; if(!f)return; fileBytes=await f.arrayBuffer(); pdfDoc=await pdfjsLib.getDocument(fileBytes).promise; currentPage=1; zoom=1; renderPage(); }
+        async function renderPage(){ if(!pdfDoc)return; const p=await pdfDoc.getPage(currentPage); const vR=p.getViewport({scale:1}); const cW=document.getElementById('designerScrollArea').clientWidth; if(scale===1)scale=(cW-80)/vR.width; const v=p.getViewport({scale:scale*zoom}); const c=document.getElementById('designerCanvas'); c.width=v.width; c.height=v.height; await p.render({canvasContext:c.getContext('2d'),viewport:v}).promise; document.getElementById('dragLayer').style.width=v.width+'px'; document.getElementById('dragLayer').style.height=v.height+'px'; updateFieldsVisibility(); }
+        function updateZoom(d){ zoom=Math.max(0.5,Math.min(3,zoom+d)); renderPage(); }
+        function changePage(d){ if(pdfDoc && currentPage+d>0 && currentPage+d<=pdfDoc.numPages){ currentPage+=d; renderPage(); document.getElementById('pageLabel').innerText=`${currentPage} / ${pdfDoc.numPages}`; } }
+        function spawnLabel(t){ if(!pdfDoc)return alert("Carga PDF"); const e=document.createElement('div'); e.className='draggable-field'; e.innerHTML=`${t} <span onclick="this.parentElement.remove()" style="cursor:pointer;margin-left:5px">&times;</span>`; e.dataset.id=t; e.dataset.page=currentPage; e.dataset.x=50; e.dataset.y=50; e.style.transform=`translate(50px, 50px)`; document.getElementById('dragLayer').appendChild(e); }
+        interact('.draggable-field').draggable({ listeners:{ move(e){ const t=e.target; const x=(parseFloat(t.dataset.x)||0)+e.dx; const y=(parseFloat(t.dataset.y)||0)+e.dy; t.style.transform=`translate(${x}px, ${y}px)`; t.dataset.x=x; t.dataset.y=y; } }, modifiers:[interact.modifiers.restrictRect({restriction:'parent',endOnly:true})] });
+        function updateFieldsVisibility(){ document.querySelectorAll('.draggable-field').forEach(el=>{ el.style.display=(parseInt(el.dataset.page)===currentPage)?'block':'none'; }); }
+        async function saveTemplateToDB(){ const n=document.getElementById('templateName').value; if(!n||!fileBytes)return alert("Faltan datos"); const cfg={}; const els=document.querySelectorAll('.draggable-field'); const p=await pdfDoc.getPage(1); const vR=p.getViewport({scale:1}); const vV=p.getViewport({scale:scale*zoom}); const r=vR.width/vV.width; for(let el of els){ const pid=el.dataset.id; const pIdx=parseInt(el.dataset.page); const x=parseFloat(el.dataset.x)*r; const y=vR.height-(parseFloat(el.dataset.y)*r)-(12*r); if(!cfg[pid])cfg[pid]=[]; cfg[pid].push({page:pIdx-1,x,y}); } const fn=`tpl_${Date.now()}.pdf`; await supabase.storage.from('templates').upload(fn,new Blob([fileBytes])); const {data:u}=supabase.storage.from('templates').getPublicUrl(fn); await supabase.from('document_templates').insert([{name:n,pdf_path:u.publicUrl,config_json:cfg}]); alert("Guardado"); loadTemplatesList(); }
+        async function loadTemplatesList(){ const {data}=await supabase.from('document_templates').select('*').order('created_at',{ascending:false}); const l=document.getElementById('templatesList'); l.innerHTML=''; const s=document.getElementById('genTemplateSelect'); s.innerHTML='<option value="">-- Seleccionar --</option>'; data.forEach(t=>{ const i=document.createElement('div'); i.className='list-item'; i.innerHTML=`<div class="list-item-text"><i class="ph-bold ph-file-pdf"></i> ${t.name}</div><button class="btn-icon danger" onclick="deleteTemplate('${t.id}','${t.pdf_path}')"><i class="ph-bold ph-trash"></i></button>`; l.appendChild(i); const o=document.createElement('option'); o.value=t.id; o.innerText=t.name; o.dataset.url=t.pdf_path; o.dataset.config=JSON.stringify(t.config_json); s.appendChild(o); }); }
+        async function deleteTemplate(id,path){ if(confirm("¿Borrar?")){ const fn=path.split('/').pop(); if(fn)await supabase.storage.from('templates').remove([fn]); await supabase.from('document_templates').delete().eq('id',id); loadTemplatesList(); } }
+
+        // --- DATA ---
+        async function createEmptyDataset(){ const n=document.getElementById('newDatasetName').value||"Lista General"; await supabase.from('datasets').insert([{name:n}]); alert("Creada"); loadDatasets(); }
+        async function processCSV(){ const f=document.getElementById('csvInput').files[0]; const n=document.getElementById('newDatasetName').value; if(!f||!n)return alert("Datos incompletos"); Papa.parse(f,{header:true,skipEmptyLines:true,complete:async function(r){ const {data:ds}=await supabase.from('datasets').insert([{name:n}]).select(); const did=ds[0].id; const row=r.data.map(x=>({dataset_id:did,data:x})); await supabase.from('dataset_records').insert(row); alert("Importado"); loadDatasets(); }}); }
+        async function loadDatasets(){ const l=document.getElementById('datasetsList'); const s=document.getElementById('genDatasetSelect'); const {data}=await supabase.from('datasets').select('*').order('created_at',{ascending:false}); l.innerHTML=''; s.innerHTML='<option value="">-- Manual --</option>'; data.forEach(d=>{ const i=document.createElement('div'); i.className='list-item'; i.innerHTML=`<div class="list-item-text" onclick="showDatasetTable('${d.id}','${d.name}')"><i class="ph-bold ph-table"></i> ${d.name}</div><button class="btn-icon danger" onclick="deleteDataset('${d.id}')"><i class="ph-bold ph-trash"></i></button>`; l.appendChild(i); const o=document.createElement('option'); o.value=d.id; o.innerText=d.name; s.appendChild(o); }); }
+        async function deleteDataset(id){ if(confirm("¿Borrar lista?")){ await supabase.from('datasets').delete().eq('id',id); loadDatasets(); document.getElementById('tableWrapper').innerHTML=''; currentDatasetId=null; } }
+        async function showDatasetTable(id,name){ currentDatasetId=id; document.getElementById('tableTitle').innerHTML=`<i class="ph-fill ph-database"></i> ${name}`; const w=document.getElementById('tableWrapper'); w.innerHTML='Cargando...'; const {data}=await supabase.from('dataset_records').select('*').eq('dataset_id',id); currentTableData=data||[]; if(!data||data.length===0){ w.innerHTML='Vacío'; return; } let cols=new Set(); data.forEach(r=>Object.keys(r.data).forEach(k=>cols.add(k))); cols=Array.from(cols); let h='<table><thead><tr><th>ACCIONES</th>'; cols.forEach(c=>h+=`<th>${c}</th>`); h+='</tr></thead><tbody>'; data.forEach(r=>{ h+=`<tr><td><button class="btn-icon" onclick="openEditModal('${r.id}')"><i class="ph-bold ph-pencil-simple"></i></button><button class="btn-icon danger" onclick="deleteRecord('${r.id}')"><i class="ph-bold ph-trash"></i></button></td>`; cols.forEach(c=>h+=`<td>${r.data[c]||''}</td>`); h+='</tr>'; }); h+='</tbody></table>'; w.innerHTML=h; }
+        function openCreateModal(){ if(!currentDatasetId)return alert("Selecciona lista"); editingRecordId=null; document.getElementById('modalTitle').innerText="Nuevo Registro"; document.querySelectorAll('.manual-form-grid input').forEach(i=>i.value=''); document.getElementById('manualEntryModal').style.display='flex'; }
+        function openEditModal(rid){ const r=currentTableData.find(x=>x.id===rid); if(!r)return; editingRecordId=rid; document.getElementById('modalTitle').innerText="Editar Registro"; const d=r.data; document.querySelectorAll('.manual-form-grid input').forEach(i=>{ const map={'m_nombre':'NOMBRE','m_calle':'CALLE Y NUMERO','m_colonia':'COLONIA','m_ciudad':'CIUDAD','m_estado':'ESTADO','m_cp':'CP','m_id_persona':'ID PERSONA','m_fecha':'FECHA DE FIRMA','m_duracion':'DURACION','m_sucursal':'SUCURSAL','m_plaza':'PLAZA'}; const k=map[i.id]; if(k)i.value=d[k]||''; }); document.getElementById('manualEntryModal').style.display='flex'; }
+        function closeModal(){ document.getElementById('manualEntryModal').style.display='none'; }
+        async function saveManualRecord(){ const d={"NOMBRE":document.getElementById('m_nombre').value,"CALLE Y NUMERO":document.getElementById('m_calle').value,"COLONIA":document.getElementById('m_colonia').value,"CIUDAD":document.getElementById('m_ciudad').value,"ESTADO":document.getElementById('m_estado').value,"CP":document.getElementById('m_cp').value,"ID PERSONA":document.getElementById('m_id_persona').value,"FECHA DE FIRMA":document.getElementById('m_fecha').value,"DURACION":document.getElementById('m_duracion').value,"SUCURSAL":document.getElementById('m_sucursal').value,"PLAZA":document.getElementById('m_plaza').value}; if(editingRecordId)await supabase.from('dataset_records').update({data:d}).eq('id',editingRecordId); else await supabase.from('dataset_records').insert([{dataset_id:currentDatasetId,data:d}]); closeModal(); showDatasetTable(currentDatasetId,document.getElementById('tableTitle').innerText.replace('Selecciona...','').trim()); }
+        async function deleteRecord(id){ if(confirm("¿Borrar?")){ await supabase.from('dataset_records').delete().eq('id',id); showDatasetTable(currentDatasetId,document.getElementById('tableTitle').innerText.replace('Selecciona...','').trim()); } }
+
+        // --- ESTILOS ---
+        async function saveCurrentStyle() { const n=prompt("Nombre Estilo:"); if(!n)return; const cfg={font:document.getElementById('styleFont').value,size:document.getElementById('styleSize').value,color:document.getElementById('styleColorHex').value,x:document.getElementById('offsetX').value,y:document.getElementById('offsetY').value}; const {error}=await supabase.from('print_styles').insert([{name:n,config:cfg}]); if(error)alert("Error");else{alert("Guardado");loadSavedStyles();} }
+        async function loadSavedStyles() { const {data}=await supabase.from('print_styles').select('*').order('created_at',{ascending:false}); const s=document.getElementById('savedStylesSelect'); s.innerHTML='<option value="">-- Cargar --</option>'; if(data)data.forEach(x=>{ const o=document.createElement('option'); o.value=x.id; o.innerText=x.name; o.dataset.config=JSON.stringify(x.config); s.appendChild(o); }); }
+        function applySavedStyle() { const o=document.getElementById('savedStylesSelect').selectedOptions[0]; if(!o.value)return; const c=JSON.parse(o.dataset.config); document.getElementById('styleFont').value=c.font; document.getElementById('styleSize').value=c.size; document.getElementById('styleColorHex').value=c.color; document.getElementById('styleColorPicker').value=c.color; document.getElementById('offsetX').value=c.x; document.getElementById('offsetY').value=c.y; }
+        async function deleteSavedStyle() { const id=document.getElementById('savedStylesSelect').value; if(!id)return alert("Selecciona estilo"); if(confirm("¿Borrar?")){ await supabase.from('print_styles').delete().eq('id',id); loadSavedStyles(); } }
+
+        // --- GENERADOR ---
+        async function loadGenTemplate(){ const opt=document.getElementById('genTemplateSelect').selectedOptions[0]; if(!opt.value)return; const r=await fetch(opt.dataset.url); const b=await r.arrayBuffer(); activeTemplate={bytes:b,config:JSON.parse(opt.dataset.config)}; const f=document.getElementById('genInputs'); f.innerHTML=''; Object.keys(activeTemplate.config).forEach(k=>{ f.innerHTML+=`<div style="margin-bottom:8px"><label>${k}</label><input type="text" id="inp_${k}" data-key="${k}"></div>`; }); document.getElementById('genControls').style.display='flex'; const p=await PDFLib.PDFDocument.load(b); document.getElementById('pdfPreview').src=await p.saveAsBase64({dataUri:true}); checkBatchAvailable(); }
+        async function loadGenDatasetData(){ const id=document.getElementById('genDatasetSelect').value; const c=document.getElementById('recordSelectorContainer'); if(!id){c.style.display='none';loadedRecords=[];checkBatchAvailable();return;} c.style.display='block'; const {data}=await supabase.from('dataset_records').select('*').eq('dataset_id',id); loadedRecords=data; const s=document.getElementById('recordSelect'); s.innerHTML='<option value="">-- Seleccionar --</option>'; data.forEach((r,i)=>{ const l=r.data.NOMBRE||r.data.Nombre||`Reg ${i+1}`; const o=document.createElement('option'); o.value=i; o.innerText=l; s.appendChild(o); }); checkBatchAvailable(); }
+        function checkBatchAvailable(){ document.getElementById('batchContainer').style.display=(activeTemplate&&loadedRecords.length>0)?'block':'none'; }
+        function fillFormWithRecord(){ const i=document.getElementById('recordSelect').value; if(i==="")return; const r=loadedRecords[i].data; document.querySelectorAll('#genInputs input').forEach(inp=>{ const k=inp.dataset.key; let v=r[k]; if(!v){ const m=Object.keys(r).find(x=>x.toUpperCase()===k.toUpperCase()); if(m)v=r[m]; } if(v)inp.value=v; }); }
+        
+        async function generatePDF(){ if(!activeTemplate)return; const {PDFDocument,StandardFonts,rgb}=PDFLib; const pdf=await PDFDocument.load(activeTemplate.bytes); const fn=document.getElementById('styleFont').value; const fs=parseFloat(document.getElementById('styleSize').value)||9; const cl=hexToRgb(document.getElementById('styleColorHex').value); const ox=parseFloat(document.getElementById('offsetX').value)||0; const oy=parseFloat(document.getElementById('offsetY').value)||0; const font=await pdf.embedFont(StandardFonts[fn]); const pages=pdf.getPages(); document.querySelectorAll('#genInputs input').forEach(inp=>{ const k=inp.dataset.key; const t=inp.value.toUpperCase(); activeTemplate.config[k]?.forEach(c=>{ if(pages[c.page])pages[c.page].drawText(t,{x:c.x+ox,y:c.y+oy,size:fs,font,color:rgb(cl.r,cl.g,cl.b)}); }); }); const b=new Blob([await pdf.save()],{type:'application/pdf'}); document.getElementById('pdfPreview').src=URL.createObjectURL(b); }
+        async function generateBatchZIP(){ if(!activeTemplate||loadedRecords.length===0)return; const z=new JSZip(); const {PDFDocument,StandardFonts,rgb}=PDFLib; const fn=document.getElementById('styleFont').value; const fs=parseFloat(document.getElementById('styleSize').value)||9; const cl=hexToRgb(document.getElementById('styleColorHex').value); const ox=parseFloat(document.getElementById('offsetX').value)||0; const oy=parseFloat(document.getElementById('offsetY').value)||0; const pb=document.getElementById('progressBar'); const pt=document.getElementById('progressText'); document.getElementById('progressBarContainer').style.display='block'; pt.style.display='block'; try{ for(let i=0;i<loadedRecords.length;i++){ const r=loadedRecords[i].data; const pdf=await PDFDocument.load(activeTemplate.bytes); const font=await pdf.embedFont(StandardFonts[fn]); const pages=pdf.getPages(); Object.keys(activeTemplate.config).forEach(k=>{ let v=r[k]; if(!v){ const m=Object.keys(r).find(x=>x.toUpperCase()===k.toUpperCase()); if(m)v=r[m]; } v=(v||'').toString().toUpperCase(); activeTemplate.config[k]?.forEach(c=>{ if(pages[c.page])pages[c.page].drawText(v,{x:c.x+ox,y:c.y+oy,size:fs,font,color:rgb(cl.r,cl.g,cl.b)}); }); }); const b=await pdf.save(); let n=`Doc_${i+1}.pdf`; if(r.NOMBRE)n=`${r.NOMBRE.replace(/[^a-z0-9]/gi,'_')}.pdf`; z.file(n,b); pb.style.width=Math.round(((i+1)/loadedRecords.length)*100)+'%'; pt.innerText=`Procesando ${i+1}/${loadedRecords.length}...`; await new Promise(r=>setTimeout(r,10)); } pt.innerText="Comprimiendo..."; const c=await z.generateAsync({type:"blob"}); saveAs(c,"Lote_Galher.zip"); pt.innerText="¡Listo!"; setTimeout(()=>{document.getElementById('progressBarContainer').style.display='none';pt.style.display='none';},3000); }catch(e){console.error(e);alert("Error: "+e.message);} }
+    </script>
+</body>
+</html>

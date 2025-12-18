@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGENDA GALHER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <style>
+        /* --- VARIABLES & RESET (Estilo Moderno Corporate/Glass) --- */
+        :root {
+            /* Colores Base */
+            --bg-body: #0b1120;
+            --bg-column: rgba(30, 41, 59, 0.4); 
+            --bg-glass-header: rgba(15, 23, 42, 0.85);
+            
+            /* Colores de Acento */
+            --primary: #0066ff; 
+            --primary-hover: #0052cc; 
+            --primary-glow: rgba(0, 102, 255, 0.3);
+            --accent-cyan: #38bdf8;
+
+            /* Elementos UI */
+            --bg-card: #ffffff; 
+            --bg-card-hover: #ffffff;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.15);
+
+            /* Textos */
+            --text-primary: #f1f5f9; 
+            --text-secondary: #94a3b8;
+            --text-card-title: #0f172a; 
+            --text-card-desc: #475569;
+
+            /* Urgencias */
+            --urgency-high: #ef4444; 
+            --urgency-med: #f59e0b; 
+            --urgency-low: #10b981;
+
+            /* Dimensiones y Sombras */
+            --radius-xl: 20px; 
+            --radius-lg: 14px; 
+            --radius-md: 8px;
+            --shadow-soft: 0 20px 40px -15px rgba(0, 0, 0, 0.6); 
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        /* --- GLOBAL --- */
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-primary); 
+            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(0, 102, 255, 0.15), transparent 40%), 
+                radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.1), transparent 40%);
+        }
+
+        /* Scrollbar Personalizado */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* --- HEADER --- */
+        header { 
+            background: var(--bg-glass-header); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            padding: 1rem 2.5rem; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid var(--border-subtle); 
+            z-index: 20;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 { 
+            font-size: 1.25rem; font-weight: 700; margin: 0; 
+            display: flex; align-items: center; gap: 16px; 
+            color: white; letter-spacing: 0.02em; text-transform: uppercase;
+        }
+
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary), #004ecc); 
+            color: white; border: none; padding: 0.75rem 1.75rem; border-radius: 50px;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; 
+            transition: all 0.3s ease; 
+            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3); 
+            font-size: 0.9rem; letter-spacing: 0.03em;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(0, 102, 255, 0.5); 
+            filter: brightness(1.1);
+        }
+
+        /* --- TABLERO (BOARD) --- */
+        .board-container { 
+            display: flex; padding: 2.5rem; gap: 32px; height: 100%; 
+            overflow-x: auto; align-items: flex-start; 
+        }
+        
+        .column { 
+            background-color: var(--bg-column); 
+            backdrop-filter: blur(10px);
+            min-width: 380px; width: 380px; 
+            border-radius: var(--radius-xl); display: flex; flex-direction: column; 
+            max-height: calc(100vh - 160px); 
+            border: 1px solid var(--border-subtle); 
+            box-shadow: var(--shadow-soft); 
+            transition: border-color 0.3s;
+        }
+        .column:hover { border-color: var(--border-highlight); }
+
+        .column-header { 
+            padding: 24px 28px; 
+            font-weight: 600; font-size: 1.05rem; letter-spacing: 0.03em;
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            color: #e2e8f0;
+        }
+        
+        .badge { 
+            background: rgba(255,255,255,0.1); color: white; 
+            padding: 4px 12px; border-radius: 20px; 
+            font-size: 0.8rem; font-weight: 700; 
+        }
+
+        .task-list { 
+            padding: 20px; flex-grow: 1; overflow-y: auto; min-height: 150px; 
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .task-list.drag-over { background: rgba(0, 102, 255, 0.05); }
+
+        /* --- TARJETAS (CARDS) --- */
+        .task-card { 
+            background-color: var(--bg-card); 
+            padding: 24px; border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow-card); 
+            cursor: grab; 
+            border-left: 4px solid #cbd5e1;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            position: relative; overflow: hidden;
+        }
+        .task-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -5px rgba(0, 0, 0, 0.1); }
+        .task-card.dragging { opacity: 0.5; transform: scale(0.98); }
+
+        .border-pending { border-left-color: #94a3b8; } 
+        .border-progress { border-left-color: var(--primary); } 
+        .border-done { border-left-color: #10b981; }
+
+        .task-title { 
+            font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; 
+            color: var(--text-card-title); line-height: 1.3; 
+        }
+        .task-desc { 
+            font-size: 0.9rem; color: var(--text-card-desc); margin-bottom: 18px; 
+            line-height: 1.6; font-weight: 400;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        
+        /* Footer de Tarjeta */
+        .card-footer { 
+            display: flex; flex-direction: column; gap: 14px; 
+            margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 14px; 
+        }
+        .meta-group { display: flex; flex-direction: column; gap: 8px; }
+        
+        .date-badge { 
+            display: inline-flex; align-items: center; gap: 6px; 
+            font-size: 0.75rem; color: #64748b; font-weight: 600; 
+            background: #f8fafc; padding: 6px 10px; border-radius: 8px; 
+            border: 1px solid #e2e8f0; width: fit-content;
+        }
+
+        .file-chip-mini { 
+            font-size: 0.75rem; background: #f0f9ff; color: #0284c7; 
+            padding: 4px 10px; border-radius: 6px; 
+            display: inline-flex; align-items: center; gap: 5px; 
+            text-decoration: none; font-weight: 500; border: 1px solid #bae6fd;
+            transition: background 0.2s;
+        }
+        .file-chip-mini:hover { background: #e0f2fe; }
+
+        .assign-row { 
+            font-size: 0.7rem; font-weight: 700; color: #64748b; 
+            text-transform: uppercase; letter-spacing: 0.04em; 
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+        }
+        .assign-arrow { color: var(--primary); font-size: 0.8rem; }
+
+        .card-bottom-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+        
+        .urgency-badge { 
+            padding: 4px 12px; border-radius: 6px; 
+            font-size: 0.7rem; font-weight: 700; color: white; 
+            text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .u-alta { background-color: var(--urgency-high); } 
+        .u-media { background-color: var(--urgency-med); } 
+        .u-baja { background-color: var(--urgency-low); }
+
+        .btn-card-action { 
+            background: transparent; border: 1px solid transparent; color: #94a3b8; 
+            border-radius: 8px; width: 32px; height: 32px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            transition: all 0.2s; font-size: 1.2rem;
+        }
+        .btn-card-action:hover { background: #eff6ff; color: var(--primary); }
+        .read-indicator { font-size: 1.2rem; color: #10b981; }
+
+        /* --- MODAL --- */
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px); 
+            z-index: 100; justify-content: center; align-items: center; 
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-box { 
+            background: #1e293b; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            width: 100%; max-width: 600px; border-radius: 24px; padding: 40px; 
+            color: white; max-height: 90vh; overflow-y: auto; 
+            position: relative;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        h2#modalTitle {
+            font-size: 1.75rem; font-weight: 700; margin: 0 0 32px 0;
+            background: linear-gradient(to right, #ffffff, #cbd5e1); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 24px; }
+        .form-label { 
+            display: block; font-size: 0.75rem; font-weight: 700; color: #94a3b8; 
+            margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em; 
+        }
+
+        .form-input, .form-textarea, select.form-input { 
+            width: 100%; padding: 14px 18px; 
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 12px; color: #f8fafc; box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; font-size: 0.95rem; 
+            transition: all 0.2s ease; outline: none;
+        }
+        .form-input:focus, .form-textarea:focus { border-color: var(--primary); background: rgba(15, 23, 42, 0.9); }
+
+        /* --- NUEVO ÁREA DE CARGA DE ARCHIVOS --- */
+        .file-input-wrapper {
+            position: relative; width: 100%; height: 140px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 16px; background: rgba(255, 255, 255, 0.02);
+            display: flex; justify-content: center; align-items: center;
+            transition: all 0.3s ease; overflow: hidden;
+        }
+        .file-input-wrapper:hover { border-color: var(--primary); background: rgba(0, 102, 255, 0.08); }
+        
+        /* Input invisible sobre el diseño */
+        .file-input-wrapper input[type="file"] {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; z-index: 10;
+        }
+
+        /* Diseño del placeholder */
+        .upload-placeholder {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            color: #94a3b8; pointer-events: none; transition: transform 0.3s ease;
+        }
+        .file-input-wrapper:hover .upload-placeholder { transform: scale(1.05); color: var(--text-primary); }
+        .upload-icon { font-size: 2.5rem; color: var(--primary); }
+        .upload-text { font-size: 0.95rem; font-weight: 500; }
+        .upload-subtext { font-size: 0.8rem; opacity: 0.7; }
+
+        /* Lista de archivos */
+        .file-list-display { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .file-item { 
+            background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 14px; border-radius: 8px; display: flex; justify-content: space-between; 
+            align-items: center; animation: fadeIn 0.3s ease-out;
+        }
+        .file-info { display: flex; align-items: center; gap: 10px; color: #e2e8f0; font-size: 0.9rem; overflow: hidden; }
+        .file-info a, .file-info span { color: inherit; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 350px; }
+        .btn-remove-file { color: #ef4444; cursor: pointer; padding: 6px; border-radius: 6px; }
+        .btn-remove-file:hover { background: rgba(239, 68, 68, 0.15); }
+
+        /* Urgencia Chips */
+        .urgency-options { display: flex; gap: 6px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); }
+        .urgency-chip { 
+            flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer; 
+            font-size: 0.85rem; font-weight: 600; color: #64748b; transition: all 0.2s; 
+        }
+        .urgency-chip:hover { color: #e2e8f0; background: rgba(255,255,255,0.03); }
+        .urgency-chip[data-val="BAJA"].active { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .urgency-chip[data-val="MEDIA"].active { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .urgency-chip[data-val="ALTA"].active { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+        /* Footer Botones */
+        .modal-footer { 
+            display: flex; align-items: center; justify-content: space-between; 
+            margin-top: 40px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); 
+        }
+        .btn-text { 
+            background: transparent; border: none; color: #94a3b8; cursor: pointer; 
+            font-weight: 600; padding: 12px 20px; border-radius: 8px; transition: all 0.2s; 
+        }
+        .btn-text:hover { color: white; background: rgba(255,255,255,0.05); }
+        .btn-delete { color: #ef4444 !important; }
+
+        /* Switch */
+        .switch-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.1); }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #cbd5e1; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: white; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="10" fill="#0066ff"/>
+                <rect x="10" y="12" width="8" height="16" rx="2" fill="white" fill-opacity="0.9"/>
+                <rect x="22" y="12" width="8" height="10" rx="2" fill="white" fill-opacity="0.5"/>
+            </svg>
+            AGENDA GALHER
+        </h1>
+        <button class="btn-primary" onclick="openModal()">
+            <i class="ph-bold ph-plus"></i> Nueva Tarea
+        </button>
+    </header>
+
+    <div class="board-container">
+        <div class="column" id="pending">
+            <div class="column-header"><span>POR HACER</span><span class="badge" id="count-pending">0</span></div>
+            <div class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"></div>
+        </div>
+        <div class="column" id="in-progress">
+            <div class="column-header"><span>EN PROCESO</span><span class="badge" id="count-progress">0</span></div>
+            <div class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"></div>
+        </div>
+        <div class="column" id="done">
+            <div class="column-header"><span>COMPLETADO</span><span class="badge" id="count-done">0</span></div>
+            <div class="task-list" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)"></div>
+        </div>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal-box">
+            <h2 id="modalTitle">Nueva Tarea</h2>
+            <input type="hidden" id="taskId">
+            
+            <div class="form-group">
+                <label class="form-label">Título de la tarea</label>
+                <input type="text" id="inputTitle" class="form-input" placeholder="Ej. Revisión de contrato con proveedores">
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <div class="switch-container">
+                        <label class="form-label" style="margin:0">Fecha Límite</label>
+                        <label class="switch">
+                            <input type="checkbox" id="checkDate" onchange="toggleDateInput()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <input type="datetime-local" id="inputDate" class="form-input" style="color-scheme: dark;" disabled>
+                </div>
+                
+                <div>
+                    <label class="form-label">Prioridad</label>
+                    <div class="urgency-options">
+                        <div class="urgency-chip active" data-val="BAJA" onclick="selectUrgency('BAJA', this)">Baja</div>
+                        <div class="urgency-chip" data-val="MEDIA" onclick="selectUrgency('MEDIA', this)">Media</div>
+                        <div class="urgency-chip" data-val="ALTA" onclick="selectUrgency('ALTA', this)">Alta</div>
+                    </div>
+                    <input type="hidden" id="inputUrgency" value="BAJA">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Descripción</label>
+                <textarea id="inputDesc" class="form-textarea" rows="4" placeholder="Escribe los detalles importantes aquí..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Archivos Adjuntos</label>
+                
+                <div class="file-input-wrapper">
+                    <div class="upload-placeholder">
+                        <i class="ph-bold ph-cloud-arrow-up upload-icon"></i>
+                        <span class="upload-text">Haz clic o arrastra archivos aquí</span>
+                        <span class="upload-subtext">Soporta PDF, Imágenes, Excel...</span>
+                    </div>
+                    <input type="file" id="inputFile" multiple onchange="previewFiles(this)">
+                </div>
+
+                <div id="fileListDisplay" class="file-list-display"></div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label class="form-label">Asignado POR:</label>
+                    <select id="inputCreator" class="form-input">
+                        <option value="" disabled selected>Seleccionar...</option>
+                        <option value="Alejandro Galvan Director corporativo">Alejandro Galvan Director corporativo</option>
+                        <option value="Francisco Puga CEO IA">Francisco Puga CEO IA</option>
+                        <option value="GALHER ZACATECAS CYNTHIA">GALHER ZACATECAS CYNTHIA</option>
+                        <option value="GALHER CD. JUAREZ ALMA">GALHER CD. JUAREZ ALMA</option>
+                        <option value="GERENCIA FINANZAS OLY">GERENCIA FINANZAS OLY</option>
+                        <option value="ELVIRA SECOM">ELVIRA SECOM</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Asignado PARA:</label>
+                    <select id="inputAssignedTo" class="form-input">
+                        <option value="" disabled selected>Seleccionar...</option>
+                        <option value="Alejandro Galvan Director corporativo">Alejandro Galvan Director corporativo</option>
+                        <option value="Francisco Puga CEO IA">Francisco Puga CEO IA</option>
+                        <option value="GALHER ZACATECAS CYNTHIA">GALHER ZACATECAS CYNTHIA</option>
+                        <option value="GALHER CD. JUAREZ ALMA">GALHER CD. JUAREZ ALMA</option>
+                        <option value="GERENCIA FINANZAS OLY">GERENCIA FINANZAS OLY</option>
+                        <option value="ELVIRA SECOM">ELVIRA SECOM</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="footer-left">
+                    <button type="button" class="btn-text btn-delete" id="btnDelete" onclick="deleteTask()" style="display: none;">
+                        <i class="ph-bold ph-trash"></i> Eliminar
+                    </button>
+                </div>
+                <div class="footer-right">
+                    <button class="btn-text" onclick="closeModal()">Cancelar</button>
+                    <button class="btn-primary" id="btnSave" onclick="saveTask()">Guardar Tarea</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const SUPABASE_URL = 'https://pavpbtfucesbjapaycsk.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdnBidGZ1Y2VzYmphcGF5Y3NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODg1MjksImV4cCI6MjA3OTg2NDUyOX0.Z16gzv5y9CDPzhQZKKTVr8UL49bW8y88LZ8Pbq_9ZhQ';
+        
+        const EMAILJS_PUBLIC_KEY = "lFv-XpbSgNq_1BkhO"; 
+        const EMAILJS_SERVICE_ID = "service_914jejr";
+        const EMAILJS_TEMPLATE_ID = "template_d806rid";
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        (function() { if(EMAILJS_PUBLIC_KEY) emailjs.init(EMAILJS_PUBLIC_KEY); })();
+
+        let currentAttachments = []; 
+
+        window.addEventListener('DOMContentLoaded', fetchTasks);
+
+        // --- INTERFAZ BÁSICA ---
+        function selectUrgency(val, element) {
+            document.getElementById('inputUrgency').value = val;
+            document.querySelectorAll('.urgency-chip').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function toggleDateInput() {
+            const isChecked = document.getElementById('checkDate').checked;
+            const dateInput = document.getElementById('inputDate');
+            dateInput.disabled = !isChecked; 
+            if (isChecked) { dateInput.focus(); } else { dateInput.value = ''; }
+        }
+
+        // --- LOGICA DE ARCHIVOS (NUEVA) ---
+        
+        // Muestra archivos YA guardados (al editar) y prepara la lista
+        function renderModalFiles() {
+            const container = document.getElementById('fileListDisplay');
+            container.innerHTML = '';
+            
+            // 1. Mostrar archivos existentes en Supabase (si estamos editando)
+            if (currentAttachments.length > 0) {
+                currentAttachments.forEach((att, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.innerHTML = `
+                        <div class="file-info">
+                            <i class="ph-bold ph-paperclip" style="color:var(--accent-cyan)"></i>
+                            <a href="${att.url}" target="_blank">${att.name}</a>
+                        </div>
+                        <i class="ph-bold ph-trash btn-remove-file" onclick="removeAttachment(${index})"></i>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        // Muestra previsualización de archivos NUEVOS seleccionados (antes de guardar)
+        function previewFiles(input) {
+            // Refrescamos primero los que ya estaban
+            renderModalFiles();
+            
+            const container = document.getElementById('fileListDisplay');
+
+            if (input.files && input.files.length > 0) {
+                Array.from(input.files).forEach((file) => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.innerHTML = `
+                        <div class="file-info">
+                            <i class="ph-bold ph-file-plus" style="color: #4ade80"></i> 
+                            <span class="file-name">${file.name}</span>
+                            <span style="font-size:0.75em; color:#94a3b8; margin-left:5px;">(Nuevo)</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        function removeAttachment(index) {
+            currentAttachments.splice(index, 1);
+            renderModalFiles();
+        }
+
+        async function uploadFile(file) {
+            const fileName = Date.now() + '_' + file.name.replace(/\s/g, '_'); 
+            const { data, error } = await supabase.storage.from('files').upload(fileName, file);
+            if (error) { console.error('Error subiendo:', error); return null; }
+            const { data: publicData } = supabase.storage.from('files').getPublicUrl(fileName);
+            return { url: publicData.publicUrl, name: file.name };
+        }
+
+        // --- CORE KANBAN ---
+        async function fetchTasks() {
+            document.querySelectorAll('.task-list').forEach(el => el.innerHTML = '');
+            const counts = { pending: 0, 'in-progress': 0, done: 0 };
+            
+            const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: true });
+            
+            if (error) return console.error(error);
+
+            data.forEach(task => {
+                createTaskElement(task);
+                if (counts[task.status] !== undefined) counts[task.status]++;
+            });
+            
+            document.getElementById('count-pending').innerText = counts['pending'];
+            document.getElementById('count-progress').innerText = counts['in-progress'];
+            document.getElementById('count-done').innerText = counts['done'];
+        }
+
+        function createTaskElement(task) {
+            const div = document.createElement('div');
+            div.className = 'task-card';
+            div.draggable = true;
+            div.id = task.id;
+            
+            let attachments = task.attachments || [];
+            if (!Array.isArray(attachments) && task.attachment_url) {
+                attachments = [{ name: task.attachment_name || 'Archivo', url: task.attachment_url }];
+            }
+            div.dataset.attachments = JSON.stringify(attachments);
+
+            if(task.status === 'pending') div.classList.add('border-pending');
+            if(task.status === 'in-progress') div.classList.add('border-progress');
+            if(task.status === 'done') div.classList.add('border-done');
+
+            div.ondragstart = drag;
+            div.ondragend = dragEnd;
+            div.onclick = () => openModal(task);
+
+            let dateHtml = '';
+            if (task.due_date) {
+                const dateObj = new Date(task.due_date);
+                const dateStr = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                dateHtml = `<div class="date-badge"><i class="ph-bold ph-calendar-blank"></i> ${dateStr}</div>`;
+            }
+
+            let filesHtml = '';
+            if (attachments.length > 0) {
+                filesHtml = '<div class="files-preview" style="margin-top:8px;">';
+                attachments.forEach(att => {
+                    filesHtml += `<a href="${att.url}" target="_blank" class="file-chip-mini" onclick="event.stopPropagation()">
+                        <i class="ph-bold ph-paperclip"></i> ${att.name}
+                    </a>`;
+                });
+                filesHtml += '</div>';
+            }
+
+            let urgencyClass = 'u-media';
+            if (task.urgency === 'ALTA') urgencyClass = 'u-alta';
+            if (task.urgency === 'BAJA') urgencyClass = 'u-baja';
+
+            const isRead = task.is_read === true;
+            const readIconHtml = isRead ? '<i class="ph-bold ph-checks read-indicator" title="Leído"></i>' : '';
+
+            div.innerHTML = `
+                <div class="task-title">${task.title}</div>
+                <div class="task-desc">${task.description || ''}</div>
+                
+                <div class="card-footer">
+                    <div class="meta-group">
+                        <div class="assign-row">
+                            <span>${task.creator || '?'}</span>
+                            <i class="ph-bold ph-arrow-right assign-arrow"></i>
+                            <span>${task.assigned_to || '?'}</span>
+                        </div>
+                        ${dateHtml}
+                        ${filesHtml}
+                    </div>
+                    
+                    <div class="card-bottom-row">
+                        <span class="urgency-badge ${urgencyClass}">${task.urgency || 'MED'}</span>
+                        <div class="card-actions" style="display:flex; gap:8px; align-items:center;">
+                            ${readIconHtml}
+                            <button class="btn-card-action" onclick="sendEmailFromCard(event, '${task.title}', '${task.urgency}', '${task.creator}', '${task.assigned_to}')" title="Enviar notificación">
+                                <i class="ph-bold ph-envelope-simple"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const column = document.getElementById(task.status);
+            if (column) column.querySelector('.task-list').appendChild(div);
+        }
+
+        async function openModal(task = null) {
+            const overlay = document.getElementById('modalOverlay');
+            const btnDelete = document.getElementById('btnDelete');
+            const checkDate = document.getElementById('checkDate');
+            const inputDate = document.getElementById('inputDate');
+            const inputFile = document.getElementById('inputFile');
+            
+            // Reset fields
+            inputFile.value = ''; 
+            document.getElementById('fileListDisplay').innerHTML = ''; // Limpiar vista de archivos
+            currentAttachments = []; 
+
+            if (task) {
+                if (task.is_read === false) {
+                    supabase.from('tasks').update({ is_read: true }).eq('id', task.id).then(() => fetchTasks());
+                }
+
+                document.getElementById('modalTitle').innerText = 'Editar Tarea';
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('inputTitle').value = task.title;
+                document.getElementById('inputDesc').value = task.description;
+                
+                if(task.due_date) {
+                    const d = new Date(task.due_date);
+                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                    inputDate.value = d.toISOString().slice(0,16);
+                    checkDate.checked = true;
+                    inputDate.disabled = false;
+                } else {
+                    inputDate.value = '';
+                    checkDate.checked = false;
+                    inputDate.disabled = true;
+                }
+
+                // Cargar adjuntos existentes
+                currentAttachments = task.attachments || [];
+                if (!Array.isArray(currentAttachments) && task.attachment_url) {
+                    currentAttachments = [{ name: task.attachment_name || 'Archivo', url: task.attachment_url }];
+                }
+                
+                const urg = task.urgency || 'MEDIA';
+                document.getElementById('inputUrgency').value = urg;
+                document.querySelectorAll('.urgency-chip').forEach(c => {
+                    c.classList.remove('active');
+                    if(c.getAttribute('data-val') === urg) c.classList.add('active');
+                });
+
+                document.getElementById('inputCreator').value = task.creator || "";
+                document.getElementById('inputAssignedTo').value = task.assigned_to || "";
+                btnDelete.style.display = (task.status === 'done') ? 'block' : 'none';
+                
+            } else {
+                document.getElementById('modalTitle').innerText = 'Crear Tarea';
+                document.getElementById('taskId').value = '';
+                document.getElementById('inputTitle').value = '';
+                document.getElementById('inputDesc').value = '';
+                inputDate.value = '';
+                checkDate.checked = false;
+                inputDate.disabled = true;
+                selectUrgency('BAJA', document.querySelector('.urgency-chip[data-val="BAJA"]'));
+                document.getElementById('inputCreator').value = "";
+                document.getElementById('inputAssignedTo').value = "";
+                btnDelete.style.display = 'none';
+            }
+            
+            renderModalFiles(); // Renderizar los archivos guardados (si hay)
+            overlay.style.display = 'flex';
+        }
+
+        async function saveTask() {
+            const btnSave = document.getElementById('btnSave');
+            const originalText = btnSave.innerHTML;
+            
+            const id = document.getElementById('taskId').value;
+            const title = document.getElementById('inputTitle').value;
+            const description = document.getElementById('inputDesc').value;
+            const creator = document.getElementById('inputCreator').value;
+            const assignedTo = document.getElementById('inputAssignedTo').value;
+            const urgency = document.getElementById('inputUrgency').value;
+            
+            const useDate = document.getElementById('checkDate').checked;
+            let dueDate = null;
+            if (useDate) {
+                dueDate = document.getElementById('inputDate').value;
+                if (!dueDate) return alert('⚠️ Selecciona una fecha válida.');
+            }
+            if (!title.trim()) return alert('El título es obligatorio');
+            if (!creator) return alert('Selecciona quién asigna.');
+            if (!assignedTo) return alert('Selecciona para quién es.');
+
+            btnSave.innerText = 'Subiendo...';
+            btnSave.disabled = true;
+
+            try {
+                // Subir nuevos archivos
+                const fileInput = document.getElementById('inputFile');
+                if (fileInput.files.length > 0) {
+                    for (const file of fileInput.files) {
+                        const uploaded = await uploadFile(file);
+                        if (uploaded) currentAttachments.push(uploaded);
+                    }
+                }
+
+                btnSave.innerText = 'Guardando...';
+                
+                const payload = { 
+                    title, description, creator, assigned_to: assignedTo, urgency, due_date: dueDate,
+                    attachments: currentAttachments 
+                };
+
+                let errorDB = null;
+                if (id) {
+                    const { error } = await supabase.from('tasks').update(payload).eq('id', id);
+                    errorDB = error;
+                } else {
+                    const { error } = await supabase.from('tasks').insert([{ ...payload, status: 'pending', is_read: false }]);
+                    errorDB = error;
+                }
+
+                if (errorDB) throw errorDB;
+
+                closeModal();
+                fetchTasks();
+
+            } catch (error) {
+                console.error(error);
+                alert('Error: ' + error.message);
+            } finally {
+                btnSave.innerHTML = originalText;
+                btnSave.disabled = false;
+            }
+        }
+
+        // --- EMAIL & TOOLS ---
+        async function sendEmailFromCard(event, title, urgency, creator, assignedTo) {
+            event.stopPropagation();
+            const card = event.currentTarget.closest('.task-card');
+            const attachments = JSON.parse(card.dataset.attachments || '[]');
+
+            if (!confirm(`¿Enviar notificación para: "${title}"?`)) return;
+
+            const btn = event.currentTarget;
+            const icon = btn.querySelector('i');
+            const originalClass = icon.className;
+            icon.className = "ph-bold ph-spinner ph-spin"; 
+
+            try {
+                let attachmentsHtml = attachments.length > 0 
+                    ? attachments.map(att => `<a href="${att.url}">📎 ${att.name}</a>`).join('<br>')
+                    : 'Sin archivos';
+
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    task_title: title, urgency, assigned_by: creator, assigned_to: assignedTo,
+                    attachments_html: attachmentsHtml
+                });
+                alert(`✅ Enviado.`);
+            } catch (e) { alert("Error al enviar."); }
+            finally { icon.className = originalClass; }
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+        function closeModalOnOverlay(ev) { if (ev.target.id === 'modalOverlay') closeModal(); }
+        
+        async function deleteTask() {
+            if (confirm('¿Eliminar permanentemente?')) {
+                await supabase.from('tasks').delete().eq('id', document.getElementById('taskId').value);
+                closeModal(); fetchTasks();
+            }
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); ev.target.closest('.task-list')?.classList.add('drag-over'); }
+        function leaveDrop(ev) { ev.target.closest('.task-list')?.classList.remove('drag-over'); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); ev.target.classList.add('dragging'); }
+        function dragEnd(ev) { ev.target.classList.remove('dragging'); document.querySelectorAll('.task-list').forEach(el => el.classList.remove('drag-over')); }
+        
+        async function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const taskEl = document.getElementById(data);
+            let target = ev.target;
+            while (!target.classList.contains('task-list') && target.parentElement) target = target.parentElement;
+            if (target.classList.contains('task-list')) {
+                const newStatus = target.parentElement.id;
+                target.appendChild(taskEl);
+                await supabase.from('tasks').update({ status: newStatus }).eq('id', data);
+                fetchTasks();
+            }
+            document.querySelectorAll('.task-list').forEach(el => el.classList.remove('drag-over'));
+        }
+    </script>
+</body>
+</html>

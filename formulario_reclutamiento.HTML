@@ -1,0 +1,472 @@
+<style>
+    /* Animación de entrada */
+    .module-container { 
+        max-width: 900px; 
+        margin: 0 auto; 
+        padding-bottom: 80px; 
+        animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Tarjetas Blancas */
+    .card-panel { 
+        background: #FFFFFF; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        padding: 30px; 
+        margin-bottom: 20px;
+        border: 1px solid #E2E8F0;
+    }
+
+    /* Encabezados de Sección */
+    .section-header { 
+        display: flex; align-items: center; gap: 12px; 
+        padding-bottom: 15px; margin-bottom: 25px; 
+        border-bottom: 2px solid #F1F5F9; color: var(--inb-navy);
+    }
+    .section-header i { font-size: 1.4rem; color: var(--inb-red); }
+    .section-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+    /* Grillas Responsivas */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 15px; } }
+
+    /* Inputs y Labels (Estilo Claro) */
+    .form-group { margin-bottom: 15px; }
+    
+    label { 
+        display: block; font-size: 0.75rem; color: #64748B; 
+        font-weight: 700; margin-bottom: 6px; text-transform: uppercase; 
+    }
+    
+    input, select { 
+        width: 100%; padding: 12px; background: #F8FAFC; 
+        border: 1px solid #E2E8F0; border-radius: 6px; 
+        color: #334155; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+    
+    input:focus, select:focus { 
+        border-color: var(--inb-blue-soft); background: #fff; 
+        box-shadow: 0 0 0 3px rgba(0, 93, 170, 0.1); 
+    }
+    
+    input:read-only { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+    .required-star { color: var(--inb-red); margin-left: 3px; }
+
+    /* Grupo RFC especial */
+    .rfc-group { display: flex; gap: 10px; }
+    .rfc-base { flex: 2; text-align: center; letter-spacing: 1px; }
+    .rfc-homo { flex: 1; text-align: center; border-color: var(--inb-blue-soft); font-weight: bold; }
+
+    /* Botón Subir Archivo */
+    .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+    .file-upload-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+    
+    .btn-upload {
+        background: #F8FAFC; border: 1px dashed #94a3b8; color: #64748B;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px; border-radius: 8px; transition: 0.2s; text-align: center; font-weight: 500;
+    }
+    .file-upload-wrapper:hover .btn-upload { border-color: var(--inb-navy); color: var(--inb-navy); background: #f0f9ff; }
+
+    /* Botón Principal */
+    .btn-primary { 
+        background: var(--inb-navy); color: white; border: none; padding: 16px; 
+        border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; 
+        width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+        transition: background 0.2s; margin-top: 10px;
+    }
+    .btn-primary:hover { background: #002244; }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    /* Warning Box */
+    .warning-box {
+        background: #FEFCE8; border: 1px solid #FEF08A; color: #854D0E;
+        padding: 1rem; border-radius: 8px; margin: 1.5rem 0; font-size: 0.9rem;
+        display: flex; gap: 10px; align-items: flex-start;
+    }
+</style>
+
+<div class="module-container">
+
+    <div style="text-align: center; margin-bottom: 30px; color: white;">
+        <h2 style="font-size: 1.8rem; font-weight: 700;">Nueva Postulación</h2>
+        <p style="opacity: 0.8;">Completa el formulario para registrarte como candidato.</p>
+    </div>
+
+    <form id="reclutamientoForm" onsubmit="submitApplication(event)">
+        
+        <div class="card-panel">
+            <div class="section-header">
+                <i class="ph-duotone ph-user-circle"></i>
+                <h3>Datos Personales</h3>
+            </div>
+            
+            <div class="form-group">
+                <label>Nombre Completo <span class="required-star">*</span></label>
+                <input type="text" id="full_name" required placeholder="Ej. JUAN PEREZ LOPEZ" style="text-transform: uppercase;">
+            </div>
+
+            <div class="form-group">
+                <label>CURP <span class="required-star">*</span> (18 Caracteres)</label>
+                <input type="text" id="curp" required minlength="18" maxlength="18" placeholder="AAAA000000H..." style="text-transform: uppercase;" oninput="processCURP(this.value)">
+                <small id="curp-msg" style="color: #64748B; font-size: 0.75rem; margin-top:4px; display:block;">Calculando fecha...</small>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>Fecha Nacimiento</label>
+                    <input type="date" id="birth_date" readonly tabindex="-1">
+                </div>
+                <div class="form-group">
+                    <label>Edad</label>
+                    <input type="number" id="age" readonly tabindex="-1">
+                </div>
+                <div class="form-group">
+                    <label>RFC (Opcional)</label>
+                    <div class="rfc-group">
+                        <input type="text" id="rfc_base" class="rfc-base" placeholder="AAAA000000" readonly tabindex="-1">
+                        <input type="text" id="rfc_homo" class="rfc-homo" placeholder="XXX" maxlength="3" style="text-transform: uppercase;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Teléfono <span class="required-star">*</span></label>
+                    <input type="tel" id="phone" pattern="[0-9]{10}" maxlength="10" required placeholder="10 Dígitos" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');">
+                </div>
+                <div class="form-group">
+                    <label>Correo Electrónico <span class="required-star">*</span></label>
+                    <input type="email" id="email" required placeholder="correo@ejemplo.com">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Estado Civil <span class="required-star">*</span></label>
+                <select id="marital_status" required>
+                    <option value="" disabled selected>SELECCIONAR...</option>
+                    <option value="SOLTERO">SOLTERO</option>
+                    <option value="CASADO">CASADO</option>
+                    <option value="UNION LIBRE">UNION LIBRE</option>
+                    <option value="DIVORCIADO">DIVORCIADO</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card-panel">
+            <div class="section-header">
+                <i class="ph-duotone ph-map-pin"></i>
+                <h3>Ubicación y Estudios</h3>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Estado de Residencia <span class="required-star">*</span></label>
+                    <select id="state" required>
+                        <option value="" disabled selected>SELECCIONAR...</option>
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label>Ciudad de Residencia <span class="required-star">*</span></label>
+                    <input type="text" id="city" required placeholder="Ej. MONTERREY" style="text-transform: uppercase;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Nivel de Estudios <span class="required-star">*</span></label>
+                <select id="education" required>
+                    <option value="" disabled selected>SELECCIONAR...</option>
+                    <option value="SECUNDARIA">SECUNDARIA</option>
+                    <option value="PREPARATORIA">PREPARATORIA</option>
+                    <option value="LICENCIATURA">LICENCIATURA</option>
+                    <option value="LICENCIATURA TRUNCA">LICENCIATURA TRUNCA</option>
+                    <option value="MAESTRIA">MAESTRIA</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card-panel">
+            <div class="section-header">
+                <i class="ph-duotone ph-briefcase"></i>
+                <h3>Interés Laboral</h3>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Disponibilidad de Horario <span class="required-star">*</span></label>
+                    <select id="availability" required>
+                        <option value="" disabled selected>SELECCIONAR...</option>
+                        <option value="SIN EMPLEO">SIN EMPLEO</option>
+                        <option value="EMPLEO MEDIO TIEMPO">EMPLEO MEDIO TIEMPO</option>
+                        <option value="EMPRENDEDOR">EMPRENDEDOR</option>
+                        <option value="COMERCIANTE">COMERCIANTE</option>
+                        <option value="EMPRESARIO">EMPRESARIO</option>
+                        <option value="EMPLEO FINES DE SEMANA">EMPLEO FINES DE SEMANA</option>
+                        <option value="EMPLEO TEMPORAL">EMPLEO TEMPORAL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Empleo que busca <span class="required-star">*</span></label>
+                    <select id="job_type_sought" required>
+                        <option value="" disabled selected>SELECCIONAR...</option>
+                        <option value="CON PRESTACIONES">CON PRESTACIONES</option>
+                        <option value="COMISIONISTA INDEPENDIENTE">COMISIONISTA INDEPENDIENTE</option>
+                        <option value="CUALQUIER OPCION">CUALQUIER OPCIÓN</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <i class="ph-bold ph-warning-circle" style="font-size: 1.5rem; color: #CA8A04;"></i>
+                <div>
+                    <strong>IMPORTANTE:</strong> 
+                    Esta fuente de trabajo es 100% comisionista, no contamos con sueldo base.
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>¿Aceptas esquema de comisiones? <span class="required-star">*</span></label>
+                    <select id="accept_commission" required>
+                        <option value="" disabled selected>SELECCIONAR...</option>
+                        <option value="SI">SI</option>
+                        <option value="NO">NO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>¿Has trabajado en Grupo Inbursa? <span class="required-star">*</span></label>
+                    <select id="prev_exp" required>
+                        <option value="" disabled selected>SELECCIONAR...</option>
+                        <option value="SI">SI</option>
+                        <option value="NO">NO</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-panel">
+            <div class="section-header">
+                <i class="ph-duotone ph-file-pdf"></i>
+                <h3>Documentación</h3>
+            </div>
+            
+            <div class="form-group">
+                <label>Curriculum Vitae (PDF) (Opcional)</label>
+                <div class="file-upload-wrapper">
+                    <div class="btn-upload" id="fileLabel">
+                        <span><i class="ph-bold ph-upload-simple"></i> Clic aquí para subir archivo</span>
+                    </div>
+                    <input type="file" id="cv_file" accept=".pdf" onchange="updateFileName(this)">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnSubmit">
+            ENVIAR POSTULACIÓN <i class="ph-bold ph-paper-plane-right"></i>
+        </button>
+
+    </form>
+</div>
+
+<script>
+    (function() {
+        const BUCKET_NAME = 'expedientes_candidatos';
+
+        // --- 1. CARGA DE ESTADOS (SINCRONIZADO EXACTAMENTE CON EL OTRO FORMULARIO) ---
+        // Este arreglo es IDÉNTICO al de 'formulario_nuevos_asesores.html'
+        // para garantizar que en la base de datos se guarde el código (ej. "AGU") y no el nombre largo.
+        const estados = [
+            {n:"AGUASCALIENTES",a:"AGU"}, {n:"BAJA CALIFORNIA",a:"BC"}, {n:"BAJA CALIFORNIA SUR",a:"BCS"},
+            {n:"CAMPECHE",a:"CAMP"}, {n:"COAHUILA",a:"COAH"}, {n:"COLIMA",a:"COL"}, {n:"CHIAPAS",a:"CHIS"},
+            {n:"CHIHUAHUA",a:"CHIH"}, {n:"CIUDAD DE MEXICO",a:"CDMX"}, {n:"DISTRITO FEDERAL",a:"CDMX"},
+            {n:"DURANGO",a:"DGO"}, {n:"GUANAJUATO",a:"GTO"}, {n:"GUERRERO",a:"GRO"}, {n:"HIDALGO",a:"HGO"},
+            {n:"JALISCO",a:"JAL"}, {n:"MEXICO",a:"MEX"}, {n:"MICHOACAN",a:"MICH"}, {n:"MORELOS",a:"MOR"},
+            {n:"NAYARIT",a:"NAY"}, {n:"NUEVO LEON",a:"NL"}, {n:"OAXACA",a:"OAX"}, {n:"PUEBLA",a:"PUE"},
+            {n:"QUERETARO",a:"QRO"}, {n:"QUINTANA ROO",a:"QROO"}, {n:"SAN LUIS POTOSI",a:"SLP"},
+            {n:"SINALOA",a:"SIN"}, {n:"SONORA",a:"SON"}, {n:"TABASCO",a:"TAB"}, {n:"TAMAULIPAS",a:"TAM"},
+            {n:"TLAXCALA",a:"TLAX"}, {n:"VERACRUZ",a:"VER"}, {n:"YUCATAN",a:"YUC"}, {n:"ZACATECAS",a:"ZAC"}
+        ];
+        
+        const stateSelect = document.getElementById('state');
+        estados.forEach(e => {
+            const opt = document.createElement('option');
+            opt.value = e.a; // IMPORTANTE: Guarda la abreviatura (ej: NL) para coincidir con la DB
+            opt.innerText = `${e.a} - ${e.n}`; // Muestra "NL - NUEVO LEON"
+            stateSelect.appendChild(opt);
+        });
+
+        // --- UI Archivo ---
+        window.updateFileName = (input) => {
+            const label = document.getElementById('fileLabel');
+            if(input.files && input.files[0]) {
+                label.innerHTML = `<span style="color:var(--inb-navy); font-weight:bold;"><i class="ph-fill ph-file-pdf"></i> ${input.files[0].name}</span>`;
+                label.style.borderColor = 'var(--inb-navy)';
+                label.style.background = '#F0F9FF';
+            } else {
+                label.innerHTML = `<span><i class="ph-bold ph-upload-simple"></i> Clic aquí para subir archivo</span>`;
+                label.style.borderColor = '#94a3b8';
+                label.style.background = '#F8FAFC';
+            }
+        };
+
+        // --- Helper: Limpiar valores vacíos a NULL ---
+        const cleanVal = (val) => {
+            if (val === undefined || val === null) return null;
+            if (typeof val === 'string' && val.trim() === '') return null;
+            return val;
+        };
+
+        // --- Procesamiento CURP ---
+        window.processCURP = (val) => {
+            val = val.toUpperCase();
+            document.getElementById('curp').value = val;
+            const msg = document.getElementById('curp-msg');
+            
+            // 1. Extraer RFC Base
+            if(val.length >= 10) {
+                document.getElementById('rfc_base').value = val.substring(0, 10);
+            } else {
+                document.getElementById('rfc_base').value = '';
+            }
+
+            // 2. Calcular Fecha y Edad
+            if(val.length === 18) {
+                const re = /^[A-Z]{4}(\d{2})(\d{2})(\d{2})[HM][A-Z]{5}([A-Z0-9])(\d)$/;
+                const match = val.match(re);
+
+                if(match) {
+                    const yy = match[1];
+                    const mm = match[2];
+                    const dd = match[3];
+                    const char17 = match[4];
+                    
+                    const isYear2000 = isNaN(char17);
+                    const fullYear = isYear2000 ? ('20' + yy) : ('19' + yy);
+                    const isoDate = `${fullYear}-${mm}-${dd}`;
+                    
+                    document.getElementById('birth_date').value = isoDate;
+                    
+                    // Calcular Edad
+                    const birthObj = new Date(isoDate);
+                    const diff = Date.now() - birthObj.getTime();
+                    const ageDate = new Date(diff); 
+                    const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
+                    
+                    document.getElementById('age').value = calculatedAge;
+                    
+                    if(calculatedAge < 18) {
+                        msg.innerText = `⛔ Edad: ${calculatedAge} años (Menor de edad)`;
+                        msg.style.color = "var(--inb-red)";
+                    } else {
+                        msg.innerText = `✅ Edad: ${calculatedAge} años | Año: ${fullYear}`;
+                        msg.style.color = "#166534"; // Verde éxito
+                    }
+
+                } else {
+                    msg.innerText = "⚠️ Formato de CURP inválido";
+                    msg.style.color = "var(--inb-red)";
+                    document.getElementById('birth_date').value = '';
+                    document.getElementById('age').value = '';
+                }
+            } else {
+                msg.innerText = "Calculando fecha...";
+                msg.style.color = "#64748B";
+            }
+        };
+
+        // --- ENVÍO DEL FORMULARIO ---
+        window.submitApplication = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const originalText = btn.innerHTML;
+            
+            const age = parseInt(document.getElementById('age').value);
+            if(isNaN(age) || age < 18) {
+                alert("Debes ser mayor de 18 años y proporcionar un CURP válido.");
+                return;
+            }
+
+            // Construir RFC
+            const rfcBase = document.getElementById('rfc_base').value;
+            const rfcHomo = cleanVal(document.getElementById('rfc_homo').value);
+            let fullRFC = null;
+            if(rfcBase) fullRFC = rfcHomo ? (rfcBase + rfcHomo.toUpperCase()) : rfcBase;
+            
+            const curpVal = document.getElementById('curp').value.toUpperCase();
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> Guardando...`;
+
+            try {
+                let cvUrl = null;
+                const fileInput = document.getElementById('cv_file');
+                
+                // Subir Archivo
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${curpVal}/cv_${Date.now()}.${fileExt}`;
+
+                    const { error: uploadError } = await window.supabase.storage
+                        .from(BUCKET_NAME)
+                        .upload(fileName, file);
+                    
+                    if (uploadError) throw new Error("Error al subir archivo: " + uploadError.message);
+                    
+                    const { data: urlData } = window.supabase.storage
+                        .from(BUCKET_NAME)
+                        .getPublicUrl(fileName);
+                    
+                    cvUrl = urlData.publicUrl;
+                }
+
+                // Insertar en DB
+                const insertData = {
+                    full_name: cleanVal(document.getElementById('full_name').value.toUpperCase()),
+                    curp: cleanVal(curpVal),
+                    rfc: cleanVal(fullRFC),
+                    birth_date: cleanVal(document.getElementById('birth_date').value),
+                    age: age,
+                    phone: cleanVal(document.getElementById('phone').value),
+                    email: cleanVal(document.getElementById('email').value),
+                    
+                    // CAMPOS HOMOLOGADOS
+                    marital_status: cleanVal(document.getElementById('marital_status').value), // Ahora incluye DIVORCIADO
+                    state: cleanVal(document.getElementById('state').value), // Ahora es código (AGU, NL)
+                    education: cleanVal(document.getElementById('education').value), // Ahora es lista exacta
+                    
+                    city: cleanVal(document.getElementById('city').value.toUpperCase()),
+                    availability: cleanVal(document.getElementById('availability').value),
+                    job_type_sought: cleanVal(document.getElementById('job_type_sought').value),
+                    accept_commission: cleanVal(document.getElementById('accept_commission').value),
+                    prev_exp: cleanVal(document.getElementById('prev_exp').value),
+                    date: new Date().toISOString().split('T')[0],
+                    cv_link: cvUrl,
+                    status: 'POSTULADO'
+                };
+
+                const { error: dbError } = await window.supabase.from('candidates').insert([insertData]);
+                if (dbError) throw new Error("Error Base de Datos: " + dbError.message);
+
+                // Éxito - Vista Final Limpia
+                document.getElementById('reclutamientoForm').innerHTML = `
+                    <div style="text-align:center; padding: 60px 20px;">
+                        <i class="ph-fill ph-check-circle" style="font-size: 5rem; color: #166534; margin-bottom: 20px;"></i>
+                        <h2 style="color: var(--inb-navy); margin-bottom: 10px;">¡Postulación Exitosa!</h2>
+                        <p style="color: #64748B;">Tus datos han sido registrados correctamente en el sistema.</p>
+                        <button class="btn-primary" onclick="window.location.reload()" style="max-width:200px; margin: 30px auto;">Nueva Postulación</button>
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error(err);
+                alert("⚠️ " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+    })();
+</script>

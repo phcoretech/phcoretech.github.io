@@ -1,0 +1,362 @@
+<style>
+    /* --- VARIABLES & BASE --- */
+    :root {
+        --inb-navy: #003366;       /* Azul Inbursa */
+        --inb-red: #E30613;        /* Rojo Inbursa */
+        --inb-blue-soft: #005DAA;  /* Azul Profesional */
+        --white: #FFFFFF;
+        --bg-light: #F8FAFC;
+        --border: #E2E8F0;
+        --text-main: #1e293b;
+        --text-sec: #64748b;
+    }
+
+    /* Contenedor Principal con Animación */
+    .module-container { 
+        max-width: 1000px; 
+        margin: 0 auto; 
+        padding-bottom: 80px; 
+        animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Tarjetas Blancas (Card Panel) */
+    .card-panel { 
+        background: var(--white); 
+        border-radius: 12px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        padding: 30px; 
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+    }
+
+    /* Encabezados de Sección */
+    .section-header { 
+        display: flex; align-items: center; gap: 12px; 
+        padding-bottom: 15px; margin-bottom: 25px; 
+        border-bottom: 2px solid #F1F5F9; color: var(--inb-navy);
+    }
+    .section-header i { font-size: 1.4rem; color: var(--inb-red); }
+    .section-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+    /* Layout Formulario */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    
+    .form-group label { 
+        display: block; font-size: 0.75rem; color: #64748B; 
+        font-weight: 700; margin-bottom: 6px; text-transform: uppercase; 
+    }
+    
+    input, select { 
+        width: 100%; padding: 12px; background: #F8FAFC; 
+        border: 1px solid #E2E8F0; border-radius: 6px; 
+        color: #334155; font-family: 'Inter', sans-serif; font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+    input:focus { 
+        border-color: var(--inb-blue-soft); background: #fff; 
+        box-shadow: 0 0 0 3px rgba(0, 93, 170, 0.1); 
+    }
+
+    /* CHECKBOXES ROLES (Estilo Pill) */
+    .roles-wrapper { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .role-option input { display: none; }
+    .role-option span {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #F1F5F9; border: 1px solid #E2E8F0;
+        padding: 8px 16px; border-radius: 20px; cursor: pointer;
+        font-size: 0.85rem; color: var(--text-sec); transition: all 0.2s; font-weight: 500;
+    }
+    .role-option input:checked + span {
+        background: var(--inb-navy); border-color: var(--inb-navy); color: white;
+        box-shadow: 0 2px 4px rgba(0, 51, 102, 0.2);
+    }
+
+    /* SWITCH EXTERNO */
+    .switch-wrapper { 
+        display: flex; align-items: center; gap: 10px; margin-top: 25px; 
+        background: #F0F9FF; padding: 15px; border-radius: 8px; border: 1px dashed var(--inb-blue-soft);
+    }
+    .switch-label { 
+        font-size: 0.9rem; color: var(--inb-navy); cursor: pointer; 
+        display: flex; align-items: center; gap: 10px; width: 100%; font-weight: 600;
+    }
+    .switch-input { width: 20px; height: 20px; cursor: pointer; accent-color: var(--inb-navy); margin: 0; }
+
+    /* BOTONES */
+    .btn-container { display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid #F1F5F9; padding-top: 20px; }
+    
+    .btn-primary { 
+        background: var(--inb-navy); color: white; font-weight: 600; border: none; 
+        padding: 12px 20px; border-radius: 6px; font-size: 0.95rem; cursor: pointer;
+        transition: background 0.2s; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { background: #002244; }
+
+    .btn-secondary {
+        background: white; border: 1px solid #E2E8F0; color: #64748B;
+        padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer;
+    }
+    .btn-secondary:hover { border-color: var(--inb-red); color: var(--inb-red); }
+
+    /* TABLA LIMPIA */
+    .table-responsive { overflow-x: auto; border-radius: 8px; border: 1px solid #E2E8F0; }
+    .table-custom { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    
+    .table-custom th { 
+        background: #F8FAFC; color: var(--inb-navy); padding: 15px; 
+        text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; 
+        border-bottom: 1px solid #E2E8F0;
+    }
+    .table-custom td { padding: 15px; border-bottom: 1px solid #E2E8F0; color: var(--text-main); vertical-align: middle; }
+    .table-custom tr:last-child td { border-bottom: none; }
+    .table-custom tr:hover td { background: #F1F5F9; }
+
+    /* Acciones en tabla */
+    .action-btn { background: none; border: none; cursor: pointer; padding: 6px; font-size: 1.2rem; border-radius: 4px; transition: 0.2s; }
+    .action-btn.edit { color: var(--inb-blue-soft); }
+    .action-btn.edit:hover { background: #E0F2FE; }
+    .action-btn.delete { color: var(--inb-red); }
+    .action-btn.delete:hover { background: #FEF2F2; }
+
+    /* Badges */
+    .badge { font-size: 0.7rem; background: #F1F5F9; color: var(--text-sec); padding: 3px 8px; border-radius: 4px; margin-right: 4px; display: inline-block; border: 1px solid #E2E8F0; font-weight: 500;}
+    .tag-externo { color: #D97706; background: #FEF3C7; border: 1px solid #FCD34D; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-left: 5px; }
+
+</style>
+
+<div class="module-container">
+    
+    <div style="margin-bottom: 25px; text-align: center; color: white;">
+        <h2 style="font-size: 1.8rem; font-weight: 700;">Configuración de Menús</h2>
+        <p style="opacity: 0.7;">Administra los accesos y la navegación de la aplicación.</p>
+    </div>
+
+    <div class="card-panel">
+        <div class="section-header">
+            <i class="ph-duotone ph-pencil-simple-line"></i>
+            <h3>Editor de Opción</h3>
+        </div>
+        
+        <input type="hidden" id="edit-id">
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Título del Menú</label>
+                <input type="text" id="menu-titulo" placeholder="Ej. Ventas">
+            </div>
+            <div class="form-group">
+                <label>Icono (Phosphor)</label>
+                <input type="text" id="menu-icono" placeholder="Ej. ph-bold ph-globe">
+            </div>
+            <div class="form-group">
+                <label>Archivo o URL</label>
+                <input type="text" id="menu-archivo" placeholder="Ej. ventas.html o https://...">
+            </div>
+            <div class="form-group">
+                <label>Orden</label>
+                <input type="number" id="menu-orden" placeholder="10">
+            </div>
+        </div>
+
+        <div class="switch-wrapper">
+            <label class="switch-label">
+                <input type="checkbox" id="menu-externo" class="switch-input">
+                <div style="display:flex; flex-direction:column;">
+                    <span><i class="ph-bold ph-arrow-square-out"></i> Abrir en pestaña nueva / externa</span>
+                    <small style="color: var(--text-sec); font-weight: normal; font-size: 0.8rem;">(Activar para sitios web externos o visores de PDF)</small>
+                </div>
+            </label>
+        </div>
+
+        <div style="margin-top: 25px;">
+            <label style="font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase; margin-bottom: 10px; display:block;">Roles Permitidos</label>
+            
+            <div class="roles-wrapper" id="contenedor-roles-dinamicos">
+                <span style="color:var(--text-sec); font-size:0.85rem;"><i class="ph-duotone ph-spinner-gap ph-spin"></i> Cargando roles...</span>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="btn-primary" onclick="guardarMenu()">
+                <i class="ph-bold ph-floppy-disk"></i> Guardar Opción
+            </button>
+            <button class="btn-secondary" onclick="limpiarFormulario()">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <div class="card-panel">
+        <div class="section-header">
+            <i class="ph-duotone ph-list-dashes"></i>
+            <h3>Menús Activos</h3>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th width="50">#</th>
+                        <th width="50">Icono</th>
+                        <th>Título</th>
+                        <th>Destino</th>
+                        <th>Roles</th>
+                        <th style="text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-menus-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // INICIAR: Primero cargamos los roles, luego la tabla
+    if (window.supabase) {
+        iniciarModuloMenus();
+    }
+
+    async function iniciarModuloMenus() {
+        await cargarRolesDelSistema(); // 1. Traer los roles nuevos
+        await cargarTablaMenus();      // 2. Traer los menús
+    }
+
+    // --- CARGAR ROLES DINÁMICOS ---
+    async function cargarRolesDelSistema() {
+        const container = document.getElementById('contenedor-roles-dinamicos');
+        const { data, error } = await window.supabase.from('roles_sistema').select('*').order('id');
+        
+        if (error) {
+            console.error("Error roles:", error);
+            container.innerHTML = '<span style="color:var(--inb-red)">Error cargando roles.</span>';
+            return;
+        }
+
+        container.innerHTML = '';
+        // Dibujar los checkboxes
+        data.forEach(rol => {
+            const label = document.createElement('label');
+            label.className = 'role-option';
+            label.innerHTML = `
+                <input type="checkbox" class="role-check" value="${rol.nombre}">
+                <span>${rol.nombre}</span>
+            `;
+            container.appendChild(label);
+        });
+    }
+
+    // 1. CARGAR TABLA
+    async function cargarTablaMenus() {
+        const tbody = document.getElementById('tabla-menus-body');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;"><i class="ph-duotone ph-spinner-gap ph-spin"></i> Cargando menús...</td></tr>';
+
+        const { data, error } = await window.supabase.from('menus').select('*').order('orden', { ascending: true });
+        if (error) { tbody.innerHTML = `<tr><td colspan="6" style="color:var(--inb-red); text-align:center;">Error: ${error.message}</td></tr>`; return; }
+        
+        tbody.innerHTML = '';
+        data.forEach(item => {
+            // Generar badges visuales para los roles
+            let rolesHtml = '';
+            if(item.roles_permitidos && Array.isArray(item.roles_permitidos)) {
+                rolesHtml = item.roles_permitidos.map(r => `<span class="badge">${r}</span>`).join('');
+            } else {
+                rolesHtml = '<span style="color:#94a3b8; font-size:0.75rem;">Sin acceso</span>';
+            }
+            
+            const tagExterno = item.es_externo ? '<span class="tag-externo">EXT</span>' : '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:700; color: var(--inb-navy);">${item.orden}</td>
+                <td style="text-align:center; color: var(--inb-blue-soft);"><i class="${item.icono}" style="font-size: 1.3rem;"></i></td>
+                <td><strong>${item.titulo}</strong> ${tagExterno}</td>
+                <td style="color: var(--text-sec); font-family: monospace; font-size:0.85rem;">${item.archivo_html}</td>
+                <td>${rolesHtml}</td>
+                <td style="text-align: right;">
+                    <button class="action-btn edit" onclick='editarMenu(${JSON.stringify(item)})'><i class="ph-bold ph-pencil-simple"></i></button>
+                    <button class="action-btn delete" onclick="eliminarMenu('${item.id}')"><i class="ph-bold ph-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 2. GUARDAR (INTACTO)
+    async function guardarMenu() {
+        const id = document.getElementById('edit-id').value;
+        const titulo = document.getElementById('menu-titulo').value;
+        const icono = document.getElementById('menu-icono').value;
+        const archivo = document.getElementById('menu-archivo').value;
+        const orden = document.getElementById('menu-orden').value;
+        const esExterno = document.getElementById('menu-externo').checked;
+        const roles = [];
+        document.querySelectorAll('.role-check:checked').forEach(cb => roles.push(cb.value));
+
+        if (!titulo || !archivo || roles.length === 0) return alert("Faltan datos obligatorios o seleccionar un rol.");
+        
+        const payload = {
+            titulo, icono, archivo_html: archivo, 
+            orden: parseInt(orden) || 10, 
+            roles_permitidos: roles,
+            es_externo: esExterno
+        };
+        
+        let res;
+        if (id) res = await window.supabase.from('menus').update(payload).eq('id', id);
+        else res = await window.supabase.from('menus').insert([payload]);
+
+        if (res.error) alert("Error: " + res.error.message);
+        else {
+            limpiarFormulario();
+            cargarTablaMenus();
+        }
+    }
+
+    // 3. EDITAR (INTACTO, solo cambia el texto del boton por ID)
+    function editarMenu(item) {
+        document.getElementById('edit-id').value = item.id;
+        document.getElementById('menu-titulo').value = item.titulo;
+        document.getElementById('menu-icono').value = item.icono;
+        document.getElementById('menu-archivo').value = item.archivo_html;
+        document.getElementById('menu-orden').value = item.orden;
+        
+        document.getElementById('menu-externo').checked = item.es_externo || false;
+        
+        // Resetear todos los checks primero
+        document.querySelectorAll('.role-check').forEach(cb => cb.checked = false);
+        
+        // Marcar solo los que vienen de la BD
+        if(item.roles_permitidos) {
+            item.roles_permitidos.forEach(rol => {
+                const cb = document.querySelector(`.role-check[value="${rol}"]`);
+                if(cb) cb.checked = true;
+            });
+        }
+        
+        // Actualizar botón
+        const btn = document.querySelector('.btn-primary');
+        btn.innerHTML = '<i class="ph-bold ph-arrows-clockwise"></i> Actualizar Opción';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 4. ELIMINAR (INTACTO)
+    async function eliminarMenu(id) {
+        if(!confirm("¿Eliminar?")) return;
+        await window.supabase.from('menus').delete().eq('id', id);
+        cargarTablaMenus();
+    }
+
+    function limpiarFormulario() {
+        document.getElementById('edit-id').value = '';
+        document.getElementById('menu-titulo').value = '';
+        document.getElementById('menu-icono').value = '';
+        document.getElementById('menu-archivo').value = '';
+        document.getElementById('menu-orden').value = '';
+        document.getElementById('menu-externo').checked = false; 
+        document.querySelectorAll('.role-check').forEach(cb => cb.checked = false);
+        
+        const btn = document.querySelector('.btn-primary');
+        btn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Guardar Opción';
+    }
+</script>

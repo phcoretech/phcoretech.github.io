@@ -1,0 +1,331 @@
+<style>
+    .cal-wrapper {
+        display: flex; flex-direction: column; gap: 15px;
+        height: 85vh; color: var(--text-main);
+    }
+    .cal-header {
+        background: var(--white); padding: 15px 20px; border-radius: 12px;
+        display: flex; flex-direction: column; gap: 15px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex-shrink: 0;
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
+
+    /* FILTROS */
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+    .filter-pill {
+        display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px;
+        font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; opacity: 1; transition: all 0.2s;
+    }
+    .filter-pill:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .filter-pill.inactive { opacity: 0.4; filter: grayscale(100%); background: #eee !important; color: #999 !important; }
+    
+    /* COLORES */
+    .f-tarea { background: #fee2e2; color: #E30613; }
+    .f-entrevista { background: #f3e8ff; color: #8b5cf6; }
+    .f-examen { background: #dcfce7; color: #10b981; }
+    .f-cumpleanos { background: #fef3c7; color: #d97706; }
+    .f-visita { background: #e0f2fe; color: #0ea5e9; }
+    .f-contrato { background: #dbeafe; color: #2563eb; }
+    .f-factura { background: #f1f5f9; color: #64748b; }
+    .f-aniversario { background: #ffedd5; color: #ea580c; }
+    .f-manual { background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    /* CALENDARIO */
+    .cal-body {
+        background: var(--white); padding: 10px; border-radius: 12px;
+        flex: 1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        overflow-y: auto;
+    }
+    .fc { font-family: 'Inter', sans-serif; font-size: 0.8rem; }
+    .fc-daygrid-event { white-space: normal !important; margin-bottom: 2px !important; padding: 2px 4px !important; }
+    .fc-daygrid-day-bottom { display: none !important; }
+    
+    /* MODALES COMUNES */
+    .cal-modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .cal-modal-box {
+        background: white; width: 90%; max-width: 500px; padding: 0;
+        border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+        overflow: hidden; display: flex; flex-direction: column;
+    }
+    .hidden { display: none !important; }
+
+    /* ESTILOS ESPECÍFICOS DE LA TARJETA DE DETALLES */
+    .detail-header { padding: 20px; color: white; position: relative; }
+    .detail-close { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+    .detail-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+    
+    .info-row { margin-bottom: 15px; }
+    .info-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px; }
+    .info-value { font-size: 0.95rem; color: #1e293b; font-weight: 500; }
+    
+    .note-section { background: #f8fafc; padding: 15px; border-top: 1px solid #e2e8f0; }
+    .note-area { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; min-height: 80px; font-family: inherit; resize: vertical; margin-top: 5px; background: white;}
+    .note-btn { background: var(--inb-navy); color: white; border: none; padding: 8px 15px; border-radius: 6px; margin-top: 8px; cursor: pointer; float: right; font-size: 0.85rem;}
+
+    /* INPUTS MODAL NUEVO */
+    .modal-padd { padding: 25px; }
+    .modal-inp { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 10px; }
+</style>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales-all.global.min.js'></script>
+
+<div class="cal-wrapper">
+    <div class="cal-header">
+        <div class="header-top">
+            <div>
+                <h2 style="margin:0; color:var(--inb-navy);">Calendario Maestro</h2>
+                <div style="font-size:0.8rem; color:#64748b; display:flex; align-items:center; gap:5px;">
+                    <i class="ph-bold ph-arrows-clockwise"></i> <span id="last-sync">Sincronizando...</span>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="window.abrirModalCal()" style="width:auto; padding:8px 16px;">
+                <i class="ph-bold ph-plus"></i> Nuevo Evento
+            </button>
+        </div>
+
+        <div class="filter-row">
+            <div class="filter-pill f-tarea" onclick="window.toggleFilter('tarea', this)"><i class="dot"></i> Tareas</div>
+            <div class="filter-pill f-entrevista" onclick="window.toggleFilter('entrevista', this)"><i class="dot"></i> Entrevistas</div>
+            <div class="filter-pill f-examen" onclick="window.toggleFilter('examen', this)"><i class="dot"></i> Exámenes</div>
+            <div class="filter-pill f-cumpleanos" onclick="window.toggleFilter('cumpleanos', this)"><i class="dot"></i> Cumpleaños</div>
+            <div class="filter-pill f-visita" onclick="window.toggleFilter('visita', this)"><i class="dot"></i> Visitas</div>
+            <div class="filter-pill f-contrato" onclick="window.toggleFilter('contrato', this)"><i class="dot"></i> Contratos</div>
+            <div class="filter-pill f-factura" onclick="window.toggleFilter('factura', this)"><i class="dot"></i> Facturas</div>
+            <div class="filter-pill f-aniversario" onclick="window.toggleFilter('aniversario', this)"><i class="dot"></i> Aniversarios</div>
+            <div class="filter-pill f-manual" onclick="window.toggleFilter('manual', this)"><i class="dot"></i> Manual</div>
+        </div>
+    </div>
+
+    <div class="cal-body">
+        <div id="calendar-el" style="height: 100%;"></div>
+    </div>
+</div>
+
+<div id="modal-details" class="cal-modal-overlay hidden">
+    <div class="cal-modal-box">
+        <div id="det-header" class="detail-header" style="background: #003366;">
+            <h3 id="det-title" style="margin:0; font-size:1.2rem; padding-right:30px;">Título del Evento</h3>
+            <div id="det-date" style="font-size:0.9rem; opacity:0.9; margin-top:5px;">Fecha</div>
+            <button class="detail-close" onclick="window.cerrarDetalles()">&times;</button>
+        </div>
+        
+        <div class="detail-body">
+            <div class="info-row">
+                <span class="info-label">Descripción</span>
+                <div id="det-desc" class="info-value">...</div>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Detalles Adicionales</span>
+                <div id="det-meta" class="info-value" style="color:var(--inb-blue-soft);">...</div>
+            </div>
+        </div>
+
+        <div class="note-section">
+            <span class="info-label"><i class="ph-bold ph-note-pencil"></i> Mis Notas Personales</span>
+            <textarea id="det-note-input" class="note-area" placeholder="Escribe una nota para este evento..."></textarea>
+            <button onclick="window.guardarNota()" id="btn-save-note" class="note-btn">Guardar Nota</button>
+            <input type="hidden" id="det-id-hidden"> </div>
+    </div>
+</div>
+
+<div id="modal-cal" class="cal-modal-overlay hidden">
+    <div class="cal-modal-box modal-padd">
+        <h3 style="margin-top:0; color:var(--inb-navy);">Nuevo Evento Manual</h3>
+        <label class="info-label">TÍTULO</label>
+        <input type="text" id="ce-titulo" class="modal-inp" placeholder="Ej. Reunión Trimestral">
+        <label class="info-label">FECHA</label>
+        <input type="date" id="ce-fecha" class="modal-inp">
+        <label class="info-label">DESCRIPCIÓN</label>
+        <textarea id="ce-desc" class="modal-inp" rows="3" placeholder="Detalles..."></textarea>
+        <div style="text-align:right; margin-top:10px;">
+            <button onclick="window.cerrarModalCal()" style="padding:8px 15px; border:none; background:#f1f5f9; cursor:pointer; border-radius:6px;">Cancelar</button>
+            <button onclick="window.guardarEventoCal()" class="btn-primary" style="padding:8px 15px; margin-left:10px;">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const supabase = window.supabase;
+        const calendarEl = document.getElementById('calendar-el');
+        let calendarInstance = null;
+        
+        let activeFilters = {
+            'tarea': true, 'entrevista': true, 'examen': true, 'cumpleanos': true,
+            'visita': true, 'contrato': true, 'factura': true, 'manual': true, 'aniversario': true
+        };
+
+        if (!supabase) {
+            calendarEl.innerHTML = '<p style="color:red; text-align:center;">Error de conexión.</p>';
+            return;
+        }
+
+        setTimeout(() => {
+            if (typeof FullCalendar === 'undefined') return;
+
+            calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                locale: 'es',
+                initialView: 'dayGridMonth',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
+                navLinks: true,
+                dayMaxEvents: false, // Ver todo
+                height: 'auto',      
+
+                events: async function(info, successCallback, failureCallback) {
+                    try {
+                        // 1. Sincronizar
+                        await supabase.rpc('sincronizar_calendario');
+                        document.getElementById('last-sync').innerText = "Actualizado: " + new Date().toLocaleTimeString();
+
+                        // 2. Leer Tabla Maestra (Incluyendo origen_id para las notas)
+                        const { data, error } = await supabase
+                            .from('calendario_maestro')
+                            .select('*');
+                        
+                        if (error) throw error;
+
+                        const eventos = data
+                            .filter(evt => activeFilters[evt.tipo] !== false)
+                            .map(evt => ({
+                                id: evt.id,
+                                title: evt.titulo,
+                                start: evt.fecha,
+                                backgroundColor: getColor(evt.tipo),
+                                borderColor: getColor(evt.tipo),
+                                extendedProps: { 
+                                    desc: evt.descripcion, 
+                                    meta: evt.meta, 
+                                    tipo: evt.tipo,
+                                    origen_id: evt.origen_id // CRÍTICO: ID único para las notas
+                                }
+                            }));
+                        
+                        successCallback(eventos);
+                    } catch (err) {
+                        console.error(err);
+                        failureCallback(err);
+                    }
+                },
+
+                // CLICK EN EVENTO -> ABRIR TARJETA
+                eventClick: function(info) {
+                    abrirTarjetaDetalle(info.event);
+                }
+            });
+
+            calendarInstance.render();
+        }, 100);
+
+        // --- LÓGICA TARJETA DE DETALLES ---
+        async function abrirTarjetaDetalle(event) {
+            const p = event.extendedProps;
+            const modal = document.getElementById('modal-details');
+            
+            // 1. Llenar datos básicos
+            document.getElementById('det-title').innerText = event.title;
+            document.getElementById('det-date').innerText = event.start.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('det-desc').innerText = p.desc || 'Sin descripción';
+            document.getElementById('det-meta').innerText = p.meta || 'N/A';
+            document.getElementById('det-header').style.background = event.backgroundColor;
+            document.getElementById('det-id-hidden').value = p.origen_id; // Guardamos ID para nota
+
+            // 2. Resetear área de nota
+            const noteArea = document.getElementById('det-note-input');
+            const saveBtn = document.getElementById('btn-save-note');
+            noteArea.value = 'Cargando nota...';
+            noteArea.disabled = true;
+            saveBtn.innerText = 'Guardar Nota';
+
+            modal.classList.remove('hidden');
+
+            // 3. Buscar nota existente en Supabase
+            if (p.origen_id) {
+                const { data, error } = await supabase
+                    .from('calendario_notas')
+                    .select('contenido')
+                    .eq('origen_id', p.origen_id)
+                    .single();
+
+                if (data) {
+                    noteArea.value = data.contenido;
+                } else {
+                    noteArea.value = ''; // No hay nota aún
+                }
+            } else {
+                noteArea.value = '';
+            }
+            noteArea.disabled = false;
+        }
+
+        window.cerrarDetalles = () => document.getElementById('modal-details').classList.add('hidden');
+
+        window.guardarNota = async () => {
+            const origenId = document.getElementById('det-id-hidden').value;
+            const contenido = document.getElementById('det-note-input').value;
+            const btn = document.getElementById('btn-save-note');
+
+            if (!origenId) return alert("Error: Evento sin ID de origen");
+
+            btn.innerText = "Guardando..."; btn.disabled = true;
+
+            // UPSERT: Si existe actualiza, si no crea
+            const { error } = await supabase
+                .from('calendario_notas')
+                .upsert({ origen_id: origenId, contenido: contenido });
+
+            if (error) {
+                alert("Error al guardar nota: " + error.message);
+            } else {
+                btn.innerText = "¡Nota Guardada!";
+                setTimeout(() => { btn.innerText = "Guardar Nota"; btn.disabled = false; }, 2000);
+            }
+        };
+
+
+        // --- UTILS & COLORES ---
+        window.toggleFilter = (tipo, el) => {
+            activeFilters[tipo] = !activeFilters[tipo];
+            el.classList.toggle('inactive');
+            calendarInstance.refetchEvents();
+        };
+
+        window.getColor = (tipo) => {
+            const colors = {
+                'tarea': '#E30613', 'entrevista': '#8b5cf6', 'examen': '#10b981',
+                'cumpleanos': '#f59e0b', 'visita': '#0ea5e9', 'contrato': '#2563eb',
+                'factura': '#64748b', 'aniversario': '#ea580c', 'manual': '#1e293b'
+            };
+            return colors[tipo] || '#999';
+        };
+
+        // --- MODAL MANUAL ---
+        window.abrirModalCal = () => {
+            document.getElementById('modal-cal').classList.remove('hidden');
+            document.getElementById('ce-fecha').value = new Date().toISOString().split('T')[0];
+        };
+        window.cerrarModalCal = () => document.getElementById('modal-cal').classList.add('hidden');
+
+        window.guardarEventoCal = async () => {
+            const titulo = document.getElementById('ce-titulo').value;
+            const fecha = document.getElementById('ce-fecha').value;
+            const desc = document.getElementById('ce-desc').value;
+            if(!titulo || !fecha) return alert("Faltan datos");
+
+            const { error } = await supabase.from('agenda_eventos').insert([{
+                titulo, fecha, descripcion: desc, tipo: 'manual'
+            }]);
+
+            if(error) alert(error.message);
+            else {
+                window.cerrarModalCal();
+                calendarInstance.refetchEvents();
+            }
+        };
+    })();
+</script>

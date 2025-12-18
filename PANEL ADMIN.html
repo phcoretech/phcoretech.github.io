@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GALHER | Panel Maestro</title>
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- ESTÉTICA PROFESIONAL GALHER (Dark Mode Mejorado) --- */
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; outline: none; }
+        body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+        /* UTILIDADES */
+        .hidden { display: none !important; }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .w-full { width: 100%; }
+
+        /* NOTIFICACIONES (TOAST) */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .toast { 
+            background: var(--bg-panel); border-left: 4px solid var(--primary); color: white;
+            padding: 15px 25px; border-radius: 8px; margin-bottom: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px;
+        }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.success { border-left-color: var(--success); }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* --- VISTA LOGIN --- */
+        #view-login { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 50; background: var(--bg-dark); }
+        .login-box { 
+            width: 400px; padding: 40px; background: var(--bg-panel); border-radius: 16px; 
+            border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+        }
+
+        /* --- VISTA DASHBOARD --- */
+        #view-dashboard { display: flex; height: 100%; }
+        
+        .sidebar { width: 260px; background: var(--bg-panel); padding: 25px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .logo-area { font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        
+        .nav-btn { 
+            padding: 12px 15px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; color: var(--text-muted); 
+            display: flex; align-items: center; gap: 12px; transition: 0.2s; 
+        }
+        .nav-btn:hover, .nav-btn.active { background: rgba(59, 130, 246, 0.15); color: var(--primary); font-weight: 600; }
+
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        
+        /* TABLAS Y FORMULARIOS */
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 18px 25px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: rgba(0,0,0,0.2); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .role-tag { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap:5px; }
+        /* Colores genéricos para roles */
+        .role-badge { background: #334155; color: white; }
+        
+        input, select { 
+            width: 100%; padding: 12px 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); 
+            border-radius: 8px; color: white; margin-top: 5px; margin-bottom: 15px; transition: 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        label { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
+
+        .btn { 
+            padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; 
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; 
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.3); color: white; }
+
+        /* Estilos para etiquetas borrables */
+        .delete-role-icon { cursor: pointer; opacity: 0.7; }
+        .delete-role-icon:hover { opacity: 1; color: #fca5a5; }
+
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="view-login" class="flex-center">
+        <div class="login-box">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <i class="ph-fill ph-lock-key" style="font-size: 3rem; color: var(--primary);"></i>
+                <h2 style="margin-top: 10px;">Panel Administrativo</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Acceso exclusivo GALHER</p>
+            </div>
+            
+            <form onsubmit="intentarLogin(event)">
+                <label>Correo Electrónico</label>
+                <input type="email" id="log-email" placeholder="admin@galher.com" required>
+                
+                <label>Contraseña Maestra</label>
+                <input type="password" id="log-pass" placeholder="••••••" required>
+                
+                <button type="submit" class="btn btn-primary w-full" id="btn-login-action">
+                    Ingresar al Sistema
+                </button>
+            </form>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                Estado: <span id="db-status">Comprobando conexión...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-dashboard" class="hidden">
+        
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i class="ph-fill ph-circles-four" style="color: var(--primary);"></i> GALHER ADMIN
+            </div>
+            
+            <div class="nav-btn active" onclick="cambiarVista('lista')" id="nav-lista">
+                <i class="ph-bold ph-users"></i> Directorio y Roles
+            </div>
+            <div class="nav-btn" onclick="cambiarVista('form'); limpiarFormulario();" id="nav-form">
+                <i class="ph-bold ph-user-plus"></i> Nuevo Usuario
+            </div>
+
+            <div style="margin-top: auto;">
+                <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 10px;">
+                    <small style="color: var(--text-muted);">Logueado como:</small>
+                    <div style="font-weight: 700;" id="user-display">Admin</div>
+                </div>
+                <button onclick="logout()" class="btn btn-danger w-full">Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <div id="panel-lista">
+                <h1 style="margin-bottom: 20px;">Configuración del Sistema</h1>
+                
+                <div class="card" style="padding: 25px; margin-bottom: 40px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="display:flex; align-items:center; gap:10px;">
+                            <i class="ph-fill ph-shield-check" style="color:var(--primary)"></i> Gestión de Roles
+                        </h3>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items:flex-end;">
+                        <div style="flex:1; max-width: 300px;">
+                            <label>Nombre del Nuevo Rol</label>
+                            <input type="text" id="nuevo-rol-input" placeholder="Ej: SUPERVISOR" style="margin-bottom:0; text-transform:uppercase;">
+                        </div>
+                        <button class="btn btn-primary" onclick="crearRol()">+ Crear</button>
+                    </div>
+
+                    <div id="contenedor-roles-badges" style="display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border); padding-top: 20px;">
+                        <span style="color:var(--text-muted); font-size:0.9rem;">Cargando roles...</span>
+                    </div>
+                </div>
+
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Directorio de Personal</h2>
+                    <button class="btn btn-primary" onclick="cambiarVista('form'); limpiarFormulario();">
+                        <i class="ph-bold ph-plus"></i> Agregar Usuario
+                    </button>
+                </div>
+
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre Completo</th>
+                                <th>Credenciales (Email / Pass)</th>
+                                <th>Rol Asignado</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-usuarios">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-form" class="hidden">
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h1 id="titulo-form">Registrar Usuario</h1>
+                        <button class="btn btn-sm" style="background:transparent; border:1px solid var(--border); color:white;" onclick="cambiarVista('lista')">Cancelar</button>
+                    </div>
+
+                    <div class="card" style="padding: 30px;">
+                        <form onsubmit="guardarUsuario(event)">
+                            <input type="hidden" id="input-id">
+                            
+                            <label>Nombre Completo</label>
+                            <input type="text" id="input-nombre" placeholder="Ej. Carlos Ruiz" required>
+                            
+                            <label>Correo Electrónico (Login)</label>
+                            <input type="email" id="input-email" placeholder="carlos@galher.com" required>
+                            
+                            <label>Contraseña de Acceso</label>
+                            <input type="text" id="input-pass" placeholder="Asigna una clave segura" required>
+                            
+                            <label>Rol en la Empresa</label>
+                            <select id="input-rol" required>
+                                <option value="" disabled selected>Cargando roles...</option>
+                            </select>
+
+                            <button type="submit" class="btn btn-primary w-full" id="btn-guardar">
+                                Guardar Datos
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // 1. CREDENCIALES (Tus claves reales)
+        const SUPABASE_URL = 'https://pavpbtfucesbjapaycsk.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhdnBidGZ1Y2VzYmphcGF5Y3NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODg1MjksImV4cCI6MjA3OTg2NDUyOX0.Z16gzv5y9CDPzhQZKKTVr8UL49bW8y88LZ8Pbq_9ZhQ';
+        
+        // Inicializar cliente
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 2. AUTO-LOGIN: VERIFICAR SESIÓN GUARDADA
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConexion();
+            const sesionGuardada = localStorage.getItem('galher_admin_session');
+            if (sesionGuardada) {
+                const usuario = JSON.parse(sesionGuardada);
+                entrarPanel(usuario.nombre);
+                mostrarNotificacion("Sesión restaurada", "success");
+            }
+        });
+
+        // 3. COMPROBACIÓN INICIAL
+        async function checkConexion() {
+            const statusEl = document.getElementById('db-status');
+            try {
+                const { data, error } = await supabase.from('equipo').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                statusEl.innerHTML = '<span style="color: var(--success)">● Conectado a Base de Datos</span>';
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = '<span style="color: var(--danger)">● Error de Conexión (Revisa SQL)</span>';
+            }
+        }
+
+        // 4. SISTEMA DE LOGIN (Consulta a tabla 'equipo')
+        async function intentarLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('log-email').value;
+            const pass = document.getElementById('log-pass').value;
+            const btn = document.getElementById('btn-login-action');
+
+            btn.textContent = "Verificando...";
+            btn.disabled = true;
+
+            try {
+                // Buscamos coincidencia
+                const { data, error } = await supabase
+                    .from('equipo')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('password', pass)
+                    .single();
+
+                if (error || !data) throw new Error("Credenciales inválidas");
+                
+                if (data.rol !== 'ADMINISTRADOR') throw new Error("Solo Administradores pueden entrar aquí");
+
+                // Login OK: Guardamos en LocalStorage
+                const usuarioData = { nombre: data.nombre, email: data.email, rol: data.rol };
+                localStorage.setItem('galher_admin_session', JSON.stringify(usuarioData));
+
+                mostrarNotificacion("Bienvenido, " + data.nombre, "success");
+                entrarPanel(data.nombre);
+
+            } catch (err) {
+                mostrarNotificacion(err.message, "error");
+                btn.textContent = "Ingresar al Sistema";
+                btn.disabled = false;
+            }
+        }
+
+        function entrarPanel(nombre) {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            document.getElementById('user-display').textContent = nombre;
+            
+            // CARGAMOS DATOS
+            cargarRolesSistema(); // <--- NUEVO: Cargar roles dinámicos
+            cargarUsuarios();     // Cargar usuarios
+        }
+
+        function logout() {
+            // Borrar sesión de la memoria
+            localStorage.removeItem('galher_admin_session');
+            window.location.reload();
+        }
+
+        // 5. GESTIÓN DE VISTAS (SPA)
+        function cambiarVista(vista) {
+            const listaPanel = document.getElementById('panel-lista');
+            const formPanel = document.getElementById('panel-form');
+            const navLista = document.getElementById('nav-lista');
+            const navForm = document.getElementById('nav-form');
+
+            if (vista === 'lista') {
+                listaPanel.classList.remove('hidden');
+                formPanel.classList.add('hidden');
+                navLista.classList.add('active');
+                navForm.classList.remove('active');
+                cargarUsuarios(); // Recargar al volver
+            } else {
+                listaPanel.classList.add('hidden');
+                formPanel.classList.remove('hidden');
+                navLista.classList.remove('active');
+                navForm.classList.add('active');
+            }
+        }
+
+        // --- NUEVA LÓGICA: GESTIÓN DE ROLES DINÁMICOS ---
+
+        async function cargarRolesSistema() {
+            // 1. Obtener roles de la tabla 'roles_sistema'
+            const { data: roles, error } = await supabase.from('roles_sistema').select('*').order('id');
+            if(error) {
+                console.error("Error cargando roles (¿creaste la tabla?):", error);
+                return;
+            }
+
+            // 2. Pintar las etiquetas en el Dashboard
+            const contenedor = document.getElementById('contenedor-roles-badges');
+            contenedor.innerHTML = '';
+            
+            // 3. Preparar el Select del Formulario de usuarios
+            const select = document.getElementById('input-rol');
+            const valorActual = select.value;
+            select.innerHTML = '<option value="" disabled selected>Seleccione un rol...</option>';
+
+            roles.forEach(rol => {
+                // A) Etiqueta visual
+                const badge = document.createElement('div');
+                badge.className = 'role-tag role-badge';
+                // El rol ADMINISTRADOR no debe borrarse
+                const btnBorrar = rol.nombre === 'ADMINISTRADOR' ? '' : `<i class="ph-bold ph-x delete-role-icon" onclick="borrarRol(${rol.id})"></i>`;
+                badge.innerHTML = `<span>${rol.nombre}</span> ${btnBorrar}`;
+                contenedor.appendChild(badge);
+
+                // B) Opción en el Select
+                const option = document.createElement('option');
+                option.value = rol.nombre;
+                option.textContent = rol.nombre;
+                select.appendChild(option);
+            });
+
+            if(valorActual) select.value = valorActual;
+        }
+
+        async function crearRol() {
+            const input = document.getElementById('nuevo-rol-input');
+            const nombre = input.value.trim().toUpperCase();
+            if(!nombre) return mostrarNotificacion("Escribe un nombre", "error");
+
+            const { error } = await supabase.from('roles_sistema').insert([{ nombre: nombre }]);
+            
+            if(error) {
+                mostrarNotificacion("Error: " + error.message, "error");
+            } else {
+                input.value = '';
+                mostrarNotificacion("Rol creado", "success");
+                cargarRolesSistema(); // Recargar visualmente
+            }
+        }
+
+        async function borrarRol(id) {
+            if(!confirm("¿Borrar este rol? Los usuarios con este rol podrían perder acceso.")) return;
+            const { error } = await supabase.from('roles_sistema').delete().eq('id', id);
+            if(error) mostrarNotificacion("Error", "error");
+            else cargarRolesSistema();
+        }
+
+        // ----------------------------------------------------
+
+        // 6. CRUD: LEER USUARIOS
+        async function cargarUsuarios() {
+            const tbody = document.getElementById('tabla-usuarios');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">Cargando directorio...</td></tr>';
+
+            const { data, error } = await supabase
+                .from('equipo')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger)">Error: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">No hay usuarios. Agrega uno nuevo.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach(u => {
+                // Color badge generico
+                const row = `
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;">${u.nombre}</div>
+                        </td>
+                        <td>
+                            <div style="font-size:0.9rem;">${u.email}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Clave: ${u.password}</div>
+                        </td>
+                        <td><span class="role-tag role-badge">${u.rol}</span></td>
+                        <td style="text-align: right;">
+                            <button class="btn btn-sm" style="background:var(--border); margin-right:5px;" onclick='editarUsuario(${JSON.stringify(u)})'>
+                                <i class="ph-bold ph-pencil-simple"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario('${u.id}')">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // 7. CRUD: CREAR / EDITAR
+        async function guardarUsuario(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-guardar');
+            const id = document.getElementById('input-id').value;
+            
+            // Datos del form
+            const datos = {
+                nombre: document.getElementById('input-nombre').value,
+                email: document.getElementById('input-email').value,
+                password: document.getElementById('input-pass').value,
+                rol: document.getElementById('input-rol').value
+            };
+
+            if(!datos.rol) return mostrarNotificacion("Selecciona un Rol", "error");
+
+            btn.textContent = "Guardando...";
+            btn.disabled = true;
+
+            try {
+                let errorSupabase;
+                
+                if (id) {
+                    // Editar
+                    const { error } = await supabase.from('equipo').update(datos).eq('id', id);
+                    errorSupabase = error;
+                } else {
+                    // Crear
+                    const { error } = await supabase.from('equipo').insert([datos]);
+                    errorSupabase = error;
+                }
+
+                if (errorSupabase) throw errorSupabase;
+
+                mostrarNotificacion(id ? "Usuario actualizado" : "Usuario creado", "success");
+                cambiarVista('lista');
+
+            } catch (err) {
+                console.error(err);
+                let msg = err.message;
+                if (msg.includes("duplicate key")) msg = "El correo ya está registrado por otro usuario.";
+                mostrarNotificacion("Error: " + msg, "error");
+            } finally {
+                btn.textContent = "Guardar Datos";
+                btn.disabled = false;
+            }
+        }
+
+        // 8. PREPARAR FORMULARIO
+        function limpiarFormulario() {
+            document.getElementById('titulo-form').textContent = "Registrar Usuario";
+            document.getElementById('input-id').value = "";
+            document.getElementById('input-nombre').value = "";
+            document.getElementById('input-email').value = "";
+            document.getElementById('input-pass').value = "";
+            document.getElementById('input-rol').value = ""; // Reset
+            
+            // Asegurarse de que el select tenga opciones cargadas
+            if(document.getElementById('input-rol').options.length <= 1) {
+                cargarRolesSistema();
+            }
+        }
+
+        function editarUsuario(u) {
+            limpiarFormulario();
+            document.getElementById('titulo-form').textContent = "Editar Usuario";
+            document.getElementById('input-id').value = u.id;
+            document.getElementById('input-nombre').value = u.nombre;
+            document.getElementById('input-email').value = u.email;
+            document.getElementById('input-pass').value = u.password;
+            
+            // Intentar asignar el valor. Si el rol no existe en la BD (fue borrado), quedará en blanco
+            setTimeout(() => {
+                 document.getElementById('input-rol').value = u.rol;
+            }, 100);
+            
+            cambiarVista('form');
+        }
+
+        // 9. CRUD: ELIMINAR
+        async function eliminarUsuario(id) {
+            if(!confirm("¿Seguro que deseas eliminar este usuario?")) return;
+
+            try {
+                const { error } = await supabase.from('equipo').delete().eq('id', id);
+                if (error) throw error;
+                mostrarNotificacion("Usuario eliminado", "success");
+                cargarUsuarios();
+            } catch (err) {
+                mostrarNotificacion("Error al eliminar: " + err.message, "error");
+            }
+        }
+
+        // 10. UTILIDAD DE NOTIFICACIÓN
+        function mostrarNotificacion(mensaje, tipo) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${tipo}`;
+            
+            let icon = tipo === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+            
+            toast.innerHTML = `<i class="ph-fill ${icon}" style="font-size:1.2rem;"></i> <span>${mensaje}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Auto eliminar a los 3 segundos
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+    </script>
+</body>
+</html>
